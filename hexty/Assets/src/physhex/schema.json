@@ -1,0 +1,15 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "object",
+    "properties": {
+        "Id": {
+            "type": "string",
+            "description": "Specifies the unique identifier for this hex physics object. Required."
+        },
+        "FriendlyName": {
+            "type": "string",
+            "description": "Describes with a friendly name the hex physics object. Optional"
+        }
+    },
+    "required": ["Id"]
+}
