@@ -16,12 +16,12 @@ public class Particle
     /// <summary>
     /// Holds the linear velocity of the particle in world space.
     /// </summary>
-    public Vector2 Velocity;
+    public Vector3 Velocity;
 
     /// <summary>
     /// Holds the acceleration of the particle in world space.
     /// </summary>
-    public Vector2 Acceleration;
+    public Vector3 Acceleration;
 
     /// <summary>
     /// Holds the amount of damping applied to linear motion.
@@ -45,6 +45,40 @@ public class Particle
     public void SetMass(float mass)
     {
         InverseMass = 1 / mass;
+    }
+
+    /// <summary>
+    /// Integrates the particle forward in time by the current time delta measured by Unity.
+    /// This function uses a Newton-Euler integration method, which is a linear approximation
+    /// of the correct integral. For this reason it may be inaccurate in some cases.
+    /// </summary>
+    public void Integrate(Vector3 force)
+    {
+        if (Time.deltaTime <= 0) return;
+
+        // Update linear position
+        Position += Velocity * Time.deltaTime;
+
+        // Work out the acceleration from the force
+        var acceleration = Acceleration + (force * Time.deltaTime);
+
+        // Update linear velocity from the acceleration
+        Velocity += acceleration * Time.deltaTime;
+
+        // Impose drag
+        Velocity *= Mathf.Pow(Damping, Time.deltaTime);
+    }
+
+    /// <summary>
+    /// Default constructor of a particle at the origin without movement.
+    /// </summary>
+    public Particle()
+    {
+        Position = Vector3.zero;
+        Velocity = Vector3.zero;
+        Acceleration = Vector3.zero;
+        Damping = 0f;
+        SetMass(0f);
     }
 }
 
