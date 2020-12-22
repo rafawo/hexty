@@ -6,6 +6,7 @@ namespace PhysHex
 /// <summary>
 /// A particle is the simplest object that can be simulated in the physhex system.
 /// </summary>
+[System.Serializable]
 public class Particle
 {
     /// <summary>
@@ -40,6 +41,12 @@ public class Particle
     public float InverseMass;
 
     /// <summary>
+    /// Total force applied to this particle.
+    /// Callers are expected to manage their own force manipulation.
+    /// </summary>
+    public Vector3 Force;
+
+    /// <summary>
     /// Sets the InverseMass property based on the mass supplied in this function.
     /// </summary>
     public void SetMass(float mass)
@@ -48,25 +55,24 @@ public class Particle
     }
 
     /// <summary>
-    /// Integrates the particle forward in time by the current time delta measured by Unity.
+    /// Integrates the particle forward in time by the supplied duration.
     /// This function uses a Newton-Euler integration method, which is a linear approximation
     /// of the correct integral. For this reason it may be inaccurate in some cases.
     /// </summary>
-    public void Integrate(Vector3 force)
+    public void Integrate(float duration)
     {
-        if (Time.deltaTime <= 0) return;
-
         // Update linear position
-        Position += Velocity * Time.deltaTime;
+        Position += Velocity * duration;
 
         // Work out the acceleration from the force
-        var acceleration = Acceleration + (force * Time.deltaTime);
+        var acceleration = Acceleration + (Force * InverseMass);
 
         // Update linear velocity from the acceleration
-        Velocity += acceleration * Time.deltaTime;
+        Velocity += acceleration * duration;
 
         // Impose drag
-        Velocity *= Mathf.Pow(Damping, Time.deltaTime);
+        var d = Mathf.Pow(Damping, duration);
+        Velocity *= d;
     }
 
     /// <summary>
@@ -78,7 +84,7 @@ public class Particle
         Velocity = Vector3.zero;
         Acceleration = Vector3.zero;
         Damping = 0f;
-        SetMass(0f);
+        InverseMass = 0f;
     }
 }
 
