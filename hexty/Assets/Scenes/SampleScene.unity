@@ -548,6 +548,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83a44a3bd92c8434196aa9c145b86476, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  UsePhysHex: 1
   Width: 20
   Height: 20
   PaddingWidth: 10
@@ -590,6 +591,13 @@ MonoBehaviour:
     z: 0
   CurrentHexCell: {fileID: 0}
   Sections: 
+  _p:
+    Position: {x: 0, y: 0, z: 0}
+    Velocity: {x: 0, y: 0, z: 0}
+    Acceleration: {x: 0, y: 0, z: 0}
+    Damping: 0
+    InverseMass: Infinity
+    Force: {x: 0, y: 0, z: 0}
 --- !u!4 &952995617
 Transform:
   m_ObjectHideFlags: 0

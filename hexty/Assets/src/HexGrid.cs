@@ -35,6 +35,8 @@ public class HexGrid : MonoBehaviour
 {
     #region Members (Unity)
 
+    public bool UsePhysHex = false;
+
     public int Width = 6;
     public int Height = 6;
 
@@ -132,6 +134,8 @@ public class HexGrid : MonoBehaviour
     private HexWrapAround hexWrapAround;
 
     private GameObject _dummy;
+    [SerializeField]
+    private PhysHex.Particle _p;
     private CameraMovementController _cameraMovement;
 
     private List<HexConvexPolygon> _polygons = new List<HexConvexPolygon>();
@@ -214,7 +218,11 @@ public class HexGrid : MonoBehaviour
         // Start its position at origin and with a rotation of 270 degrees, so that
         // when the camera is hooked it starts looking towards negative Z (0, 0, -1)
         _dummy = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        _dummy.transform.position = Vector3.zero;
+        _p = new PhysHex.Particle();
+        _p.Damping = 0.1f;
+        _p.Acceleration = new Vector3(5.0f, 0.0f, 5.0f);
+        _p.SetMass(10);
+        _dummy.transform.position = _p.Position;
         _dummy.transform.rotation = Quaternion.Euler(0f, 270f, 0f);
         _cameraMovement = Camera.main.GetComponent<CameraMovementController>();
         _cameraMovement.ResetCamera();
@@ -361,34 +369,41 @@ public class HexGrid : MonoBehaviour
 
     private void MoveDummy()
     {
+        Vector3 force = Vector3.zero;
+
         if (Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A))
         {
-            var direction = -Camera.main.transform.right;
-            direction.Normalize();
-            direction.y = _dummy.transform.position.y;
-            _dummy.transform.position += direction * _cameraMovement.Step;
+            force = -Camera.main.transform.right;
+            force.Normalize();
         }
         else if (Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D))
         {
-            var direction = Camera.main.transform.right;
-            direction.Normalize();
-            direction.y = _dummy.transform.position.y;
-            _dummy.transform.position += direction * _cameraMovement.Step;
+            force = Camera.main.transform.right;
+            force.Normalize();
         }
 
         if (Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.S))
         {
-            var direction = -Camera.main.transform.forward;
-            direction.Normalize();
-            direction.y = _dummy.transform.position.y;
-            _dummy.transform.position += direction * _cameraMovement.Step;
+            force = -Camera.main.transform.forward;
+            force.Normalize();
         }
         else if (Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W))
         {
-            var direction = Camera.main.transform.forward;
-            direction.Normalize();
-            direction.y = _dummy.transform.position.y;
-            _dummy.transform.position += direction * _cameraMovement.Step;
+            force = Camera.main.transform.forward;
+            force.Normalize();
+        }
+
+        force.y = _dummy.transform.position.y;
+        _p.Force += force;
+        _p.Integrate(Time.deltaTime);
+
+        if (UsePhysHex)
+        {
+            _dummy.transform.position = _p.Position;
+        }
+        else
+        {
+            _dummy.transform.position += force * _cameraMovement.Step;
         }
 
         _dummy.transform.position = hexWrapAround.TransformPosition(_dummy.transform.position, _metrics);
