@@ -373,46 +373,75 @@ public class HexGrid : MonoBehaviour
 
     private void MoveDummy()
     {
-        Vector3 force = Vector3.zero;
-
-        if (Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A))
-        {
-            force = -Camera.main.transform.right;
-            force.Normalize();
-        }
-        else if (Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D))
-        {
-            force = Camera.main.transform.right;
-            force.Normalize();
-        }
-
-        if (Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.S))
-        {
-            force = -Camera.main.transform.forward;
-            force.Normalize();
-        }
-        else if (Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W))
-        {
-            force = Camera.main.transform.forward;
-            force.Normalize();
-        }
-
-        force.y = _dummy.transform.position.y;
-        _particle.Force.Accrue(force);
-        _particle.Force = new PhysHex.AccruedVector3(Vector3.ClampMagnitude(_particle.Force.Total, 1000f));
-        _particle.Integrate(Time.deltaTime);
-
         if (UsePhysHex)
         {
+            if (Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A))
+            {
+                var force = -Camera.main.transform.right;
+                force.y = _dummy.transform.position.y;
+                force.Normalize();
+                _particle.Force.Accrue(force);
+            }
+
+            if (Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D))
+            {
+                var force = Camera.main.transform.right;
+                force.y = _dummy.transform.position.y;
+                force.Normalize();
+                _particle.Force.Accrue(force);
+            }
+
+            if (Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.S))
+            {
+                var force = -Camera.main.transform.forward;
+                force.y = _dummy.transform.position.y;
+                force.Normalize();
+                _particle.Force.Accrue(force);
+            }
+
+            if (Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W))
+            {
+                var force = Camera.main.transform.forward;
+                force.y = _dummy.transform.position.y;
+                force.Normalize();
+                _particle.Force.Accrue(force);
+            }
+
+            _particle.Force = new PhysHex.AccruedVector3(Vector3.ClampMagnitude(_particle.Force.Total, 1000f), _particle.Force.Multiplier);
+            _particle.Integrate(Time.deltaTime);
             _dummy.transform.position = _particle.Position;
         }
         else
         {
+            var force = Vector3.zero;
+
+            if (Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A))
+            {
+                force = -Camera.main.transform.right;
+                force.Normalize();
+            }
+            else if (Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D))
+            {
+                force = Camera.main.transform.right;
+                force.Normalize();
+            }
+
+            if (Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.S))
+            {
+                force = -Camera.main.transform.forward;
+                force.Normalize();
+            }
+            else if (Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W))
+            {
+                force = Camera.main.transform.forward;
+                force.Normalize();
+            }
+
+            force.y = _dummy.transform.position.y;
             _dummy.transform.position += force * _cameraMovement.Step;
         }
 
         _dummy.transform.position = hexWrapAround.TransformPosition(_dummy.transform.position, _metrics);
-
         _dummy.transform.Rotate(
             0,
             Input.GetKey(KeyCode.J)
