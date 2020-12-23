@@ -217,8 +217,8 @@ public class HexGrid : MonoBehaviour
         _particle = new PhysHex.Particle {
             Damping = 0.5f,
             Mass = 10f,
-            ForceMultiplier = 10f,
         };
+        _particle.Force.Multiplier = 10f;
 
         TriangulateMesh();
 
@@ -398,8 +398,8 @@ public class HexGrid : MonoBehaviour
         }
 
         force.y = _dummy.transform.position.y;
-        _particle.AccruedForce += force * _particle.ForceMultiplier;
-        _particle.AccruedForce = Vector3.ClampMagnitude(_particle.AccruedForce, 1000f);
+        _particle.Force.Accrue(force);
+        _particle.Force = new PhysHex.AccruedVector3(Vector3.ClampMagnitude(_particle.Force.Total, 1000f));
         _particle.Integrate(Time.deltaTime);
 
         if (UsePhysHex)

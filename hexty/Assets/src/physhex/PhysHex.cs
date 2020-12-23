@@ -1,7 +1,103 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace PhysHex
 {
+
+[System.Serializable]
+public class AccruedVector3
+{
+    /// <summary>
+    /// Total vector3 value from accrued vectors so far.
+    /// </summary>
+    public Vector3 Total { get { return m_Total; } }
+
+    /// <summary>
+    /// Scalar vector used to scale up every vector added to the total accrued value.
+    /// </summary>
+    public float Multiplier { get { return m_Multiplier; } set { m_Multiplier = value == 0 ? 1 : value; } }
+
+    [SerializeField]
+    private Vector3 m_Total = Vector3.zero;
+    [SerializeField]
+    private float m_Multiplier = 1;
+    [SerializeField]
+    private Dictionary<string, Vector3> m_Modifiers = new Dictionary<string, Vector3>();
+
+    /// <summary>
+    /// Default constructor that default initializes properties.
+    /// </summary>
+    public AccruedVector3() { }
+
+    /// <summary>
+    /// Constructor that sets the total accrued vector3 value to the supplied initial value.
+    /// </summary>
+    /// <param name="v">Initial accrued vector3 value.</param>
+    public AccruedVector3(Vector3 v)
+    {
+        m_Total = v;
+    }
+
+    /// <summary>
+    /// Accrue a vector3 value into the total.
+    /// </summary>
+    /// <param name="v">vector3 value to accrue to the total.</param>
+    public void Accrue(Vector3 v)
+    {
+        m_Total += v * Multiplier;
+    }
+
+    /// <summary>
+    /// Add a named vector3 accrued value to the total.
+    /// The convenience of mapping a name to a vector3 accrued value
+    /// allows callers to remove from the total any modifications
+    /// done to this "named vector".
+    /// If the name already exists, the supplied vector
+    /// value is added to the base vector value and then that accrued into
+    /// the total.
+    /// If the name doesn't exist, the supplied vector value
+    /// is accrued into the total.
+    /// </summary>
+    /// <param name="k">vector3 value name</param>
+    /// <param name="v">vector3 value</param>
+    public void Add(string k, Vector3 v)
+    {
+        if (m_Modifiers.ContainsKey(k))
+        {
+            m_Modifiers[k] += v;
+        }
+        else
+        {
+            m_Modifiers.Add(k, v);
+        }
+
+        Accrue(m_Modifiers[k]);
+    }
+
+    /// <summary>
+    /// Removes all accrued value from the specified named value.
+    /// </summary>
+    /// <param name="k">vector3 value name</param>
+    public void Remove(string k)
+    {
+        if (m_Modifiers.ContainsKey(k))
+        {
+            Accrue(-m_Modifiers[k]);
+            m_Modifiers.Remove(k);
+        }
+    }
+
+    /// <summary>
+    /// Change the base vector3 value of a specific value name.
+    /// </summary>
+    /// <param name="k">vector3 value name.</param>
+    /// <param name="v">vector3 value.</param>
+    public void Set(string k, Vector3 v)
+    {
+        Remove(k);
+        Add(k, v);
+    }
+}
 
 /// <summary>
 /// A particle is the simplest object that can be simulated in the physhex system.
@@ -22,7 +118,7 @@ public class Particle
     /// <summary>
     /// Holds the acceleration of the particle in world space.
     /// </summary>
-    public Vector3 Acceleration;
+    public AccruedVector3 Acceleration;
 
     /// <summary>
     /// Holds the amount of damping applied to linear motion.
@@ -61,35 +157,7 @@ public class Particle
     /// Total force applied to this particle.
     /// Callers are expected to manage their own force manipulation.
     /// </summary>
-    public Vector3 AccruedForce;
-
-    /// <summary>
-    /// Scalar value that scales the Force property of a particle.
-    /// </summary>
-    public float ForceMultiplier
-    {
-        get
-        {
-            return _forceMultiplier;
-        }
-
-        set
-        {
-            _forceMultiplier = value == 0 ? 1 : value;
-        }
-    }
-    private float _forceMultiplier;
-
-    /// <summary>
-    /// Accured force on the object times the force multiplier scalar value.
-    /// </summary>
-    public Vector3 Force
-    {
-        get
-        {
-            return AccruedForce * ForceMultiplier;
-        }
-    }
+    public AccruedVector3 Force;
 
     /// <summary>
     /// Default constructor of a particle at the origin without movement.
@@ -98,32 +166,10 @@ public class Particle
     {
         Position = Vector3.zero;
         Velocity = Vector3.zero;
-        Acceleration = Vector3.zero;
+        Acceleration = new AccruedVector3();
         Damping = 0f;
         InverseMass = 0f;
-        AccruedForce = Vector3.zero;
-        ForceMultiplier = 1;
-    }
-
-    /// <summary>
-    /// Particle constructor that has a parameter for each public property.
-    /// </summary>
-    /// <param name="position">Supplies initial position value.</param>
-    /// <param name="velocity">Supplies initial velocity value.</param>
-    /// <param name="acceleration">Supplies initial acceleration value.</param>
-    /// <param name="damping">Supplies initial damping value.</param>
-    /// <param name="inverseMass">Supplies initial inverse mass value.</param>
-    /// <param name="accruedForce">Supplies initial accrued force value.</param>
-    /// <param name="forceMultiplier">Supplies initial force multiplier value.</param>
-    public Particle(Vector3 position, Vector3 velocity, Vector3 acceleration, float damping, float inverseMass, Vector3 accruedForce, float forceMultiplier)
-    {
-        Position = position;
-        Velocity = velocity;
-        Acceleration = acceleration;
-        Damping = damping;
-        InverseMass = inverseMass;
-        AccruedForce = accruedForce;
-        ForceMultiplier = forceMultiplier;
+        Force = new AccruedVector3();
     }
 
     /// <summary>
@@ -145,7 +191,7 @@ public class Particle
         Position += Velocity * duration;
 
         // Work out the acceleration from the force
-        var acceleration = Acceleration + (AccruedForce * InverseMass);
+        var acceleration = Acceleration.Total + (Force.Total * InverseMass);
 
         // Update linear velocity from the acceleration
         Velocity += acceleration * duration;
