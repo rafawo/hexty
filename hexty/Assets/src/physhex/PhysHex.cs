@@ -33,9 +33,11 @@ public class AccruedVector3
     /// Constructor that sets the total accrued vector3 value to the supplied initial value.
     /// </summary>
     /// <param name="v">Initial accrued vector3 value.</param>
-    public AccruedVector3(Vector3 v)
+    /// <param name="multiplier">Optionally supplies a multiplier value.</param>
+    public AccruedVector3(Vector3 v, float multiplier = 1f)
     {
         m_Total = v;
+        m_Multiplier = multiplier;
     }
 
     /// <summary>
@@ -108,24 +110,24 @@ public class Particle
     /// <summary>
     /// Holds the linear position of the particle in world space.
     /// </summary>
-    public Vector3 Position;
+    public Vector3 Position = Vector3.zero;
 
     /// <summary>
     /// Holds the linear velocity of the particle in world space.
     /// </summary>
-    public Vector3 Velocity;
+    public Vector3 Velocity = Vector3.zero;
 
     /// <summary>
     /// Holds the acceleration of the particle in world space.
     /// </summary>
-    public AccruedVector3 Acceleration;
+    public AccruedVector3 Acceleration = new AccruedVector3();
 
     /// <summary>
     /// Holds the amount of damping applied to linear motion.
     /// Damping is required to remove energy added through numerical
     /// instability in the integrator.
     /// </summary>
-    public float Damping;
+    public float Damping = 1f;
 
     /// <summary>
     /// Holds the inverse of the mass of the particle.
@@ -134,7 +136,7 @@ public class Particle
     /// it is more useful to have objects with infinite mass (immovable)
     /// than zero mass (completely unstable in numerical simulation).
     /// </summary>
-    public float InverseMass;
+    public float InverseMass = 1 / 10f;
 
     /// <summary>
     /// Computes the mass of the particle based on the inverse mass.
@@ -157,20 +159,12 @@ public class Particle
     /// Total force applied to this particle.
     /// Callers are expected to manage their own force manipulation.
     /// </summary>
-    public AccruedVector3 Force;
+    public AccruedVector3 Force = new AccruedVector3();
 
     /// <summary>
     /// Default constructor of a particle at the origin without movement.
     /// </summary>
-    public Particle()
-    {
-        Position = Vector3.zero;
-        Velocity = Vector3.zero;
-        Acceleration = new AccruedVector3();
-        Damping = 0f;
-        InverseMass = 0f;
-        Force = new AccruedVector3();
-    }
+    public Particle() { }
 
     /// <summary>
     /// Sets the InverseMass property based on the mass supplied in this function.

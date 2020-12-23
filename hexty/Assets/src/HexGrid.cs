@@ -217,8 +217,8 @@ public class HexGrid : MonoBehaviour
         _particle = new PhysHex.Particle {
             Damping = 0.5f,
             Mass = 10f,
+            Force = new PhysHex.AccruedVector3(Vector3.zero, 10f),
         };
-        _particle.Force.Multiplier = 10f;
 
         TriangulateMesh();
 
