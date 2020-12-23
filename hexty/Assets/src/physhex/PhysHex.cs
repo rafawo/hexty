@@ -41,10 +41,90 @@ public class Particle
     public float InverseMass;
 
     /// <summary>
+    /// Computes the mass of the particle based on the inverse mass.
+    /// When setting via this property, InverseMass is the one set.
+    /// </summary>
+    public float Mass
+    {
+        get
+        {
+            return 1 / InverseMass;
+        }
+
+        set
+        {
+            InverseMass = 1 / value;
+        }
+    }
+
+    /// <summary>
     /// Total force applied to this particle.
     /// Callers are expected to manage their own force manipulation.
     /// </summary>
-    public Vector3 Force;
+    public Vector3 AccruedForce;
+
+    /// <summary>
+    /// Scalar value that scales the Force property of a particle.
+    /// </summary>
+    public float ForceMultiplier
+    {
+        get
+        {
+            return _forceMultiplier;
+        }
+
+        set
+        {
+            _forceMultiplier = value == 0 ? 1 : value;
+        }
+    }
+    private float _forceMultiplier;
+
+    /// <summary>
+    /// Accured force on the object times the force multiplier scalar value.
+    /// </summary>
+    public Vector3 Force
+    {
+        get
+        {
+            return AccruedForce * ForceMultiplier;
+        }
+    }
+
+    /// <summary>
+    /// Default constructor of a particle at the origin without movement.
+    /// </summary>
+    public Particle()
+    {
+        Position = Vector3.zero;
+        Velocity = Vector3.zero;
+        Acceleration = Vector3.zero;
+        Damping = 0f;
+        InverseMass = 0f;
+        AccruedForce = Vector3.zero;
+        ForceMultiplier = 1;
+    }
+
+    /// <summary>
+    /// Particle constructor that has a parameter for each public property.
+    /// </summary>
+    /// <param name="position">Supplies initial position value.</param>
+    /// <param name="velocity">Supplies initial velocity value.</param>
+    /// <param name="acceleration">Supplies initial acceleration value.</param>
+    /// <param name="damping">Supplies initial damping value.</param>
+    /// <param name="inverseMass">Supplies initial inverse mass value.</param>
+    /// <param name="accruedForce">Supplies initial accrued force value.</param>
+    /// <param name="forceMultiplier">Supplies initial force multiplier value.</param>
+    public Particle(Vector3 position, Vector3 velocity, Vector3 acceleration, float damping, float inverseMass, Vector3 accruedForce, float forceMultiplier)
+    {
+        Position = position;
+        Velocity = velocity;
+        Acceleration = acceleration;
+        Damping = damping;
+        InverseMass = inverseMass;
+        AccruedForce = accruedForce;
+        ForceMultiplier = forceMultiplier;
+    }
 
     /// <summary>
     /// Sets the InverseMass property based on the mass supplied in this function.
@@ -65,7 +145,7 @@ public class Particle
         Position += Velocity * duration;
 
         // Work out the acceleration from the force
-        var acceleration = Acceleration + (Force * InverseMass);
+        var acceleration = Acceleration + (AccruedForce * InverseMass);
 
         // Update linear velocity from the acceleration
         Velocity += acceleration * duration;
@@ -73,18 +153,6 @@ public class Particle
         // Impose drag
         var d = Mathf.Pow(Damping, duration);
         Velocity *= d;
-    }
-
-    /// <summary>
-    /// Default constructor of a particle at the origin without movement.
-    /// </summary>
-    public Particle()
-    {
-        Position = Vector3.zero;
-        Velocity = Vector3.zero;
-        Acceleration = Vector3.zero;
-        Damping = 0f;
-        InverseMass = 0f;
     }
 }
 

@@ -135,7 +135,7 @@ public class HexGrid : MonoBehaviour
 
     private GameObject _dummy;
     [SerializeField]
-    private PhysHex.Particle _p;
+    private PhysHex.Particle _particle;
     private CameraMovementController _cameraMovement;
 
     private List<HexConvexPolygon> _polygons = new List<HexConvexPolygon>();
@@ -212,17 +212,21 @@ public class HexGrid : MonoBehaviour
 
     private void Reset()
     {
+        // Create a PhysHex particle that will be the placeholder for the dummy
+        // sphere to showcase movement.
+        _particle = new PhysHex.Particle {
+            Damping = 0.5f,
+            Mass = 10f,
+            ForceMultiplier = 10f,
+        };
+
         TriangulateMesh();
 
         // Create a dummy sphere that will be used to get hooked up to the camera.
         // Start its position at origin and with a rotation of 270 degrees, so that
         // when the camera is hooked it starts looking towards negative Z (0, 0, -1)
         _dummy = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        _p = new PhysHex.Particle();
-        _p.Damping = 0.1f;
-        _p.Acceleration = new Vector3(5.0f, 0.0f, 5.0f);
-        _p.SetMass(10);
-        _dummy.transform.position = _p.Position;
+        _dummy.transform.position = _particle.Position;
         _dummy.transform.rotation = Quaternion.Euler(0f, 270f, 0f);
         _cameraMovement = Camera.main.GetComponent<CameraMovementController>();
         _cameraMovement.ResetCamera();
@@ -394,12 +398,13 @@ public class HexGrid : MonoBehaviour
         }
 
         force.y = _dummy.transform.position.y;
-        _p.Force += force;
-        _p.Integrate(Time.deltaTime);
+        _particle.AccruedForce += force * _particle.ForceMultiplier;
+        _particle.AccruedForce = Vector3.ClampMagnitude(_particle.AccruedForce, 1000f);
+        _particle.Integrate(Time.deltaTime);
 
         if (UsePhysHex)
         {
-            _dummy.transform.position = _p.Position;
+            _dummy.transform.position = _particle.Position;
         }
         else
         {
