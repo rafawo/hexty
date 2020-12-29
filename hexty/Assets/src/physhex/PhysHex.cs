@@ -4,6 +4,13 @@ using UnityEngine;
 namespace PhysHex
 {
 
+/// <summary>
+/// Represents a vector3 that can be accrued to from
+/// other vector3 values. Provides a facility to "name"
+/// additional vector3 values that can be added/removed,
+/// easing the management of modifications to a single
+/// vector3 concept.
+/// </summary>
 [System.Serializable]
 public class AccruedVector3
 {
