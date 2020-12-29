@@ -21,7 +21,8 @@ public class Projectile
     /// Accumulated duration since the projectile started
     /// (either construction or reset).
     /// </summary>
-    public float Epoch { get { return m_Epoch; } }
+    public float Epoch { get => m_Epoch; }
+    private float m_Epoch;
 
     /// <summary>
     /// Expiry threshold for the epoch to stop calling
@@ -29,10 +30,7 @@ public class Projectile
     /// The particle can still be manually integrated
     /// via the public Particle property.
     /// </summary>
-    public float Expiry { get { return m_Expiry; } }
-
-    private float m_Epoch;
-    private float m_Expiry;
+    public float Expiry;
 
     /// <summary>
     /// Constructor that configures a projectile with an expiry threshold
@@ -56,7 +54,7 @@ public class Projectile
     public void Reset(float expiry, Particle particle)
     {
         m_Epoch = 0;
-        m_Expiry = expiry;
+        Expiry = expiry;
         Particle = particle;
     }
 
@@ -70,11 +68,124 @@ public class Projectile
     public void Integrate(float duration)
     {
         m_Epoch += duration;
-        if (m_Epoch <= m_Expiry)
+        if (m_Epoch <= Expiry)
         {
             Particle.Integrate(duration);
         }
     }
+
+    /// <summary>
+    /// Represents a "null" projectile with an object that is still
+    /// valid and can call Integrate to.
+    /// However, the physhex simulation wouldn't do anything with
+    /// this projectile.
+    /// </summary>
+    public static Projectile Nill = new Projectile(-1f, new Particle());
+}
+
+public static class ProjectileCommonTypeName
+{
+    public static string Pistol = "PISTOL";
+    public static string Artillery = "ARTILLERY";
+    public static string Fireball = "FIREBALL";
+    public static string Laser = "LASER";
+}
+
+/// <summary>
+/// Convenient repository of different projectiles
+/// mapped by name that return a Projectile instance
+/// correctly initialized to represent the physhex
+/// necessary to simulate such ballistic object.
+///
+/// All instances of this class access the same underlying global
+/// repository map. This means that it's a pseudo-singleton.
+///
+/// NOTE: The velocity and acceleration in the projectiles
+/// is assuming a movement in the x-z plane, with no movement in the y axis.
+/// Manual tinkering of the vectors is necessary to represent movement
+/// on a different way.
+/// </summary>
+public class ProjectileRepository
+{
+    public Projectile this[string name]
+    {
+        get
+        {
+            lock (gm_Lock)
+            {
+                return gm_Projectiles.ContainsKey(name) ? gm_Projectiles[name] : Projectile.Nill;
+            }
+        }
+
+        set
+        {
+            lock (gm_Lock)
+            {
+                if (gm_Projectiles.ContainsKey(name))
+                {
+                    gm_Projectiles[name] = value;
+                }
+                else
+                {
+                    gm_Projectiles.Add(name, value);
+                }
+            }
+        }
+    }
+
+    private static object gm_Lock = new object();
+
+    private static Dictionary<string, Projectile> gm_Projectiles = new Dictionary<string, Projectile>()
+    {
+        {
+            ProjectileCommonTypeName.Pistol,
+            new Projectile(
+                float.MaxValue,
+                new Particle {
+                    Mass = 2f, // 2 kg
+                    Velocity = new Vector3(0f, 0f, 35f), // 35 m/s
+                    Acceleration = new AccruedVector3(new Vector3(0f, -1f, 0f)),
+                    Damping = 0.99f,
+                }
+            )
+        },
+        {
+            ProjectileCommonTypeName.Artillery,
+            new Projectile(
+                float.MaxValue,
+                new Particle {
+                    Mass = 200f, // 200 kg
+                    Velocity = new Vector3(0f, 30f, 40f), // 50 m/s
+                    Acceleration = new AccruedVector3(new Vector3(0f, -20f, 0f)),
+                    Damping = 0.99f,
+                }
+            )
+        },
+        {
+            ProjectileCommonTypeName.Fireball,
+            new Projectile(
+                float.MaxValue,
+                new Particle {
+                    Mass = 1f, // 1 kg - Mostly blast damage
+                    Velocity = new Vector3(0f, 0f, 10f), // 50 m/s
+                    Acceleration = new AccruedVector3(new Vector3(0f, 0.6f, 0f)),
+                    Damping = 0.9f,
+                }
+            )
+        },
+        {
+            ProjectileCommonTypeName.Laser,
+            new Projectile(
+                float.MaxValue,
+                new Particle {
+                    Mass = 0.1f, // 0.1 k - Almost no weight
+                    Velocity = new Vector3(0f, 0f, 10f), // 100 m/s
+                    Acceleration = new AccruedVector3(new Vector3(0f, 0f, 0f)), // No gravity
+                    Damping = 0.9f,
+                }
+            )
+        },
+    };
 }
 
 }
