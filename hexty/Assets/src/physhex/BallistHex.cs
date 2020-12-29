@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -31,6 +32,12 @@ public class Projectile
     /// via the public Particle property.
     /// </summary>
     public float Expiry;
+
+    /// <summary>
+    /// Optional additional predicate that stops the projectile
+    /// if the particle meets the predicate's criteria.
+    /// </summary>
+    public Predicate<Particle> StopPredicate;
 
     /// <summary>
     /// Constructor that configures a projectile with an expiry threshold
@@ -68,7 +75,7 @@ public class Projectile
     public void Integrate(float duration)
     {
         m_Epoch += duration;
-        if (m_Epoch <= Expiry)
+        if ((m_Epoch <= Expiry) && (StopPredicate == null || !StopPredicate(Particle)))
         {
             Particle.Integrate(duration);
         }
