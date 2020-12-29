@@ -179,6 +179,7 @@ public class Particle
     /// This function uses a Newton-Euler integration method, which is a linear approximation
     /// of the correct integral. For this reason it may be inaccurate in some cases.
     /// </summary>
+    /// <param name="duration">Supplies the duration of time units that have occured since the last time.</param>
     public void Integrate(float duration)
     {
         // Update linear position
