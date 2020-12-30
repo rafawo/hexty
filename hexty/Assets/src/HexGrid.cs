@@ -373,77 +373,13 @@ public class HexGrid : MonoBehaviour
         }
     }
 
-    private enum InputDirection { Left, Right, Down, Up }
-
-    /// <summary>
-    /// Returns whether the specified input direction is active.
-    ///
-    /// This function assumes that the input manager has setup
-    /// left-right movement with "Horizontal" and
-    /// down-up movement with "Vertical".
-    ///
-    /// -- Ideal Horizontal Input Setup --
-    ///
-    /// Left: [
-    ///     A,
-    ///     Left arrow,
-    ///     Controller X axis (left joystick) < 0,
-    ///     Controller 4th X axis (right joystick) < 0,
-    ///     Controller 6th X axis (dpad) < 0,
-    /// ]
-    /// Right: [
-    ///     D,
-    ///     Right arrow,
-    ///     Controller X axis (left joystick) > 0,
-    ///     Controller 4th X axis (right joystick) > 0,
-    ///     Controller 6th X axis (dpad) > 0,
-    /// ]
-    ///
-    /// -- Ideal Vertical Input Setup --
-    ///
-    /// Down: [
-    ///     S,
-    ///     Down arrow,
-    ///     Controller Y axis (left joystick) < 0,
-    ///     Controller 5th Y axis (right joystick) < 0,
-    ///     Controller 7th Y axis (dpad) < 0,
-    /// ]
-    /// Up: [
-    ///     W,
-    ///     Up arrow,
-    ///     Controller inverted Y axis (left joystick) > 0,
-    ///     Controller inverted 5th Y axis (right joystick) > 0,
-    ///     Controller inverted 7th Y axis (dpad) > 0,
-    /// ]
-    /// </summary>
-    /// <param name="direction">Input direction to be queried if active.</param>
-    /// <returns></returns>
-    private bool IsDirectionActive(InputDirection direction)
-    {
-        switch (direction)
-        {
-            case InputDirection.Left:
-                return Input.GetAxis("Horizontal") < 0;
-
-            case InputDirection.Right:
-                return Input.GetAxis("Horizontal") > 0;
-
-            case InputDirection.Down:
-                return Input.GetAxis("Vertical") < 0;
-
-            case InputDirection.Up:
-                return Input.GetAxis("Vertical") > 0;
-        }
-        return false;
-    }
-
     private void MoveDummy()
     {
         if (UsePhysHex)
         {
             bool anyDirectionActive = false;
 
-            if (IsDirectionActive(InputDirection.Left))
+            if (InputUtilities.IsDirectionActive(InputUtilities.Direction.Left))
             {
                 var force = -Camera.main.transform.right;
                 force.y = _dummy.transform.position.y;
@@ -452,7 +388,7 @@ public class HexGrid : MonoBehaviour
                 anyDirectionActive = true;
             }
 
-            if (IsDirectionActive(InputDirection.Right))
+            if (InputUtilities.IsDirectionActive(InputUtilities.Direction.Right))
             {
                 var force = Camera.main.transform.right;
                 force.y = _dummy.transform.position.y;
@@ -461,7 +397,7 @@ public class HexGrid : MonoBehaviour
                 anyDirectionActive = true;
             }
 
-            if (IsDirectionActive(InputDirection.Down))
+            if (InputUtilities.IsDirectionActive(InputUtilities.Direction.Down))
             {
                 var force = -Camera.main.transform.forward;
                 force.y = _dummy.transform.position.y;
@@ -470,7 +406,7 @@ public class HexGrid : MonoBehaviour
                 anyDirectionActive = true;
             }
 
-            if (IsDirectionActive(InputDirection.Up))
+            if (InputUtilities.IsDirectionActive(InputUtilities.Direction.Up))
             {
                 var force = Camera.main.transform.forward;
                 force.y = _dummy.transform.position.y;
@@ -497,23 +433,23 @@ public class HexGrid : MonoBehaviour
         {
             var force = Vector3.zero;
 
-            if (IsDirectionActive(InputDirection.Left))
+            if (InputUtilities.IsDirectionActive(InputUtilities.Direction.Left))
             {
                 force = -Camera.main.transform.right;
                 force.Normalize();
             }
-            else if (IsDirectionActive(InputDirection.Right))
+            else if (InputUtilities.IsDirectionActive(InputUtilities.Direction.Right))
             {
                 force = Camera.main.transform.right;
                 force.Normalize();
             }
 
-            if (IsDirectionActive(InputDirection.Down))
+            if (InputUtilities.IsDirectionActive(InputUtilities.Direction.Down))
             {
                 force = -Camera.main.transform.forward;
                 force.Normalize();
             }
-            else if (IsDirectionActive(InputDirection.Up))
+            else if (InputUtilities.IsDirectionActive(InputUtilities.Direction.Up))
             {
                 force = Camera.main.transform.forward;
                 force.Normalize();
