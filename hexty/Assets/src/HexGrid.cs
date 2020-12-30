@@ -87,11 +87,21 @@ public class HexGridUx
     public HexSection[] Sections;
 }
 
-public class HexGrid : MonoBehaviour
+public class PhysHexUx
 {
     public bool UsePhysHex = false;
+    public PhysHex.Particle Particle;
+    public float ForceMultiplier = 10f;
+    public float ClampValue = 500f;
+}
 
-    public HexGridUx HexParams = new HexGridUx();
+public class HexGrid : MonoBehaviour
+{
+    [SerializeField]
+    private HexGridUx HexParams = new HexGridUx();
+
+    [SerializeField]
+    private PhysHexUx PhysHexParams = new PhysHexUx();
 
     private Dictionary<HexCubeCoordinates, HexCell> hashedCells
         = new Dictionary<HexCubeCoordinates, HexCell>();
@@ -103,41 +113,18 @@ public class HexGrid : MonoBehaviour
 
     private HexMesh hexMesh;
 
-    private HexOffsetType OffsetType
-    {
-        get
-        {
-            return HexParams.UseEvenOffset
-                ? HexOffsetType.Even
-                : HexOffsetType.Odd;
-        }
-    }
+    private HexOffsetType OffsetType { get => HexParams.UseEvenOffset ? HexOffsetType.Even : HexOffsetType.Odd; }
 
-    private HexOrientation Orientation
-    {
-        get
-        {
-            return HexParams.UseFlatHex
-                ? HexOrientation.Flat
-                : HexOrientation.Pointy;
-        }
-    }
+    private HexOrientation Orientation { get => HexParams.UseFlatHex ? HexOrientation.Flat : HexOrientation.Pointy; }
 
-    private HexMetrics _metrics
-    {
-        get
-        {
-            return new HexMetrics(HexParams.OuterRadius);
-        }
-    }
+    private HexMetrics _metrics { get => new HexMetrics(HexParams.OuterRadius); }
+
+    public Color SelectedColor { get => HexParams.SelectedColor; }
+    public Color DefaultColor { get => HexParams.DefaultColor; }
 
     private HexWrapAround hexWrapAround;
 
     private GameObject _dummy;
-    [SerializeField]
-    private PhysHex.Particle _particle;
-    private float ForceMultiplier = 10f;
-    private float ClampValue = 500f;
     private CameraMovementController _cameraMovement;
 
     private List<HexConvexPolygon> _polygons = new List<HexConvexPolygon>();
@@ -173,6 +160,7 @@ public class HexGrid : MonoBehaviour
         _gridCanvasText.Clear();
 
         HexParams = new HexGridUx();
+        PhysHexParams = new PhysHexUx();
 
         gridCanvas = GetComponentInChildren<Canvas>();
         hexMesh = GetComponentInChildren<HexMesh>();
@@ -232,12 +220,12 @@ public class HexGrid : MonoBehaviour
 
         // Create a PhysHex particle that will be the placeholder for the dummy
         // sphere to showcase movement.
-        _particle = new PhysHex.Particle {
+        PhysHexParams.Particle = new PhysHex.Particle {
             Damping = 0.75f,
             Mass = 10f,
-            Force = new PhysHex.AccruedVector3(Vector3.zero, ForceMultiplier),
+            Force = new PhysHex.AccruedVector3(Vector3.zero, PhysHexParams.ForceMultiplier),
         };
-        _dummy.transform.position = _particle.Position;
+        _dummy.transform.position = PhysHexParams.Particle.Position;
     }
 
     private HexCell CreateCellFromOffsetCoordinate(int x, int z)
@@ -373,7 +361,7 @@ public class HexGrid : MonoBehaviour
 
     private void MoveDummy()
     {
-        if (UsePhysHex)
+        if (PhysHexParams.UsePhysHex)
         {
             bool anyDirectionActive = false;
 
@@ -382,7 +370,7 @@ public class HexGrid : MonoBehaviour
                 var force = -Camera.main.transform.right;
                 force.y = _dummy.transform.position.y;
                 force.Normalize();
-                _particle.Force.Accrue(force);
+                PhysHexParams.Particle.Force.Accrue(force);
                 anyDirectionActive = true;
             }
 
@@ -391,7 +379,7 @@ public class HexGrid : MonoBehaviour
                 var force = Camera.main.transform.right;
                 force.y = _dummy.transform.position.y;
                 force.Normalize();
-                _particle.Force.Accrue(force);
+                PhysHexParams.Particle.Force.Accrue(force);
                 anyDirectionActive = true;
             }
 
@@ -400,7 +388,7 @@ public class HexGrid : MonoBehaviour
                 var force = -Camera.main.transform.forward;
                 force.y = _dummy.transform.position.y;
                 force.Normalize();
-                _particle.Force.Accrue(force);
+                PhysHexParams.Particle.Force.Accrue(force);
                 anyDirectionActive = true;
             }
 
@@ -409,23 +397,23 @@ public class HexGrid : MonoBehaviour
                 var force = Camera.main.transform.forward;
                 force.y = _dummy.transform.position.y;
                 force.Normalize();
-                _particle.Force.Accrue(force);
+                PhysHexParams.Particle.Force.Accrue(force);
                 anyDirectionActive = true;
             }
 
-            _particle.Force = new PhysHex.AccruedVector3(
+            PhysHexParams.Particle.Force = new PhysHex.AccruedVector3(
                 Vector3.ClampMagnitude(
-                    _particle.Force.Total, ClampValue), _particle.Force.Multiplier);
-            _particle.Pause = !anyDirectionActive;
-            _particle.Integrate(Time.deltaTime);
+                    PhysHexParams.Particle.Force.Total, PhysHexParams.ClampValue), PhysHexParams.Particle.Force.Multiplier);
+            PhysHexParams.Particle.Pause = !anyDirectionActive;
+            PhysHexParams.Particle.Integrate(Time.deltaTime);
 
             if (!anyDirectionActive)
             {
-                _particle.Force.Reset(ForceMultiplier);
-                _particle.Velocity = Vector3.zero;
+                PhysHexParams.Particle.Force.Reset(PhysHexParams.ForceMultiplier);
+                PhysHexParams.Particle.Velocity = Vector3.zero;
             }
 
-            _dummy.transform.position = _particle.Position;
+            _dummy.transform.position = PhysHexParams.Particle.Position;
         }
         else
         {
