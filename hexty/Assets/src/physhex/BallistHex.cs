@@ -66,6 +66,12 @@ public class Projectile
     }
 
     /// <summary>
+    /// Property that returns whether the projectile has expired.
+    /// </summary>
+    /// <returns></returns>
+    public bool Expired { get => (m_Epoch > Expiry) || (StopPredicate != null && StopPredicate(Particle)); }
+
+    /// <summary>
     /// Integrate the projectile by integrating the underlying
     /// particle used to simulate position movement.
     /// If the epoch has gone over the threshold then
@@ -75,7 +81,7 @@ public class Projectile
     public void Integrate(float duration)
     {
         m_Epoch += duration;
-        if ((m_Epoch <= Expiry) && (StopPredicate == null || !StopPredicate(Particle)))
+        if (!Expired)
         {
             Particle.Integrate(duration);
         }
