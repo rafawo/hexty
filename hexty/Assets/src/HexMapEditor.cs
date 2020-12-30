@@ -27,7 +27,7 @@ public class HexMapEditor : MonoBehaviour
         var cell = Grid.GetMouseCell();
         if (cell != null)
         {
-            Grid.ColorCell(cell, leftClick ? Grid.SelectedColor : Grid.DefaultColor, true);
+            Grid.ColorCell(cell, leftClick ? Grid.HexParams.SelectedColor : Grid.HexParams.DefaultColor, true);
             Grid.UpdateColors();
         }
     }

@@ -31,12 +31,9 @@ public enum HexGridMode
     Count,
 }
 
-public class HexGrid : MonoBehaviour
+[System.Serializable]
+public class HexGridUx
 {
-    #region Members (Unity)
-
-    public bool UsePhysHex = false;
-
     public int Width = 6;
     public int Height = 6;
 
@@ -88,10 +85,13 @@ public class HexGrid : MonoBehaviour
     public HexCell CurrentHexCell;
     public HexDirection Direction;
     public HexSection[] Sections;
+}
 
-    #endregion
+public class HexGrid : MonoBehaviour
+{
+    public bool UsePhysHex = false;
 
-    #region Members
+    public HexGridUx HexParams = new HexGridUx();
 
     private Dictionary<HexCubeCoordinates, HexCell> hashedCells
         = new Dictionary<HexCubeCoordinates, HexCell>();
@@ -107,7 +107,7 @@ public class HexGrid : MonoBehaviour
     {
         get
         {
-            return UseEvenOffset
+            return HexParams.UseEvenOffset
                 ? HexOffsetType.Even
                 : HexOffsetType.Odd;
         }
@@ -117,7 +117,7 @@ public class HexGrid : MonoBehaviour
     {
         get
         {
-            return UseFlatHex
+            return HexParams.UseFlatHex
                 ? HexOrientation.Flat
                 : HexOrientation.Pointy;
         }
@@ -127,7 +127,7 @@ public class HexGrid : MonoBehaviour
     {
         get
         {
-            return new HexMetrics(OuterRadius);
+            return new HexMetrics(HexParams.OuterRadius);
         }
     }
 
@@ -144,10 +144,6 @@ public class HexGrid : MonoBehaviour
     private List<HexLine> _lines = new List<HexLine>();
 
     private List<Text> _gridCanvasText = new List<Text>();
-
-    #endregion
-
-    #region Methods
 
     private void Awake()
     {
@@ -176,15 +172,17 @@ public class HexGrid : MonoBehaviour
 
         _gridCanvasText.Clear();
 
+        HexParams = new HexGridUx();
+
         gridCanvas = GetComponentInChildren<Canvas>();
         hexMesh = GetComponentInChildren<HexMesh>();
         hashedCells = new Dictionary<HexCubeCoordinates, HexCell>();
         paddingCells = new Dictionary<HexCubeCoordinates, List<HexCell>>();
-        hexWrapAround = new HexWrapAround(Width, Height, OffsetType, Orientation);
+        hexWrapAround = new HexWrapAround(HexParams.Width, HexParams.Height, OffsetType, Orientation);
 
-        for (int x = -PaddingWidth; x < Width + PaddingWidth; ++x)
+        for (int x = -HexParams.PaddingWidth; x < HexParams.Width + HexParams.PaddingWidth; ++x)
         {
-            for (int z = -PaddingHeight; z < Height + PaddingHeight; ++z)
+            for (int z = -HexParams.PaddingHeight; z < HexParams.Height + HexParams.PaddingHeight; ++z)
             {
                 var cell = CreateCellFromOffsetCoordinate(x, z);
                 hashedCells.Add(cell.Coordinates, cell);
@@ -225,7 +223,7 @@ public class HexGrid : MonoBehaviour
         _cameraMovement.ResetCamera();
         _cameraMovement.Hook(_dummy);
 
-        if (ColorCurrentPosition)
+        if (HexParams.ColorCurrentPosition)
         {
             ColorCell(_dummy.transform.position, Color.green, hexWrapAround != null);
             ColorCellTriangle(_dummy.transform.position, Color.red, hexWrapAround != null);
@@ -249,16 +247,16 @@ public class HexGrid : MonoBehaviour
     private HexCell CreateCellFromHexCoordinate(HexCubeCoordinates coordinates)
     {
         var position = coordinates.ToPosition(_metrics, Orientation, OffsetType);
-        var cell = Instantiate<HexCell>(CellPrefab);
+        var cell = Instantiate<HexCell>(HexParams.CellPrefab);
         cell.transform.SetParent(transform, false);
         cell.transform.localPosition = position;
         cell.Coordinates = coordinates;
         cell.PaddingCoordinates = hexWrapAround.TransformHex(coordinates);
-        cell.ViewColor = cell.IsPadding ? PaddingColor : DefaultColor;
+        cell.ViewColor = cell.IsPadding ? HexParams.PaddingColor : HexParams.DefaultColor;
 
-        if (!HideHexLabel)
+        if (!HexParams.HideHexLabel)
         {
-            Text label = Instantiate<Text>(CellLabelPrefab);
+            Text label = Instantiate<Text>(HexParams.CellLabelPrefab);
             label.rectTransform.SetParent(gridCanvas.transform, false);
             label.rectTransform.anchoredPosition = new Vector2(position.x, position.z);
             label.text = cell.PaddingCoordinates.ToStringOnSeparateLines();
@@ -296,8 +294,8 @@ public class HexGrid : MonoBehaviour
                 {
                     hexMesh.UpdateCellColor(
                         paddedCell,
-                        color == DefaultColor && paddedCell.IsPadding
-                            ? PaddingColor
+                        color == HexParams.DefaultColor && paddedCell.IsPadding
+                            ? HexParams.PaddingColor
                             : color);
                 }
             }
@@ -337,8 +335,8 @@ public class HexGrid : MonoBehaviour
                     hexMesh.UpdateCellTriangleColor(
                         paddedCell,
                         direction.Direction,
-                        color == DefaultColor && paddedCell.IsPadding
-                            ? PaddingColor
+                        color == HexParams.DefaultColor && paddedCell.IsPadding
+                            ? HexParams.PaddingColor
                             : color);
                 }
             }
@@ -489,31 +487,31 @@ public class HexGrid : MonoBehaviour
                 .GetRelativeMeshTriangleDirection(_dummy.transform.position, metrics, Orientation, OffsetType)
             : new HexDirection(Orientation, 0);
 
-        if (lastCell != newCell && newCell.ViewColor == SelectedColor)
+        if (lastCell != newCell && newCell.ViewColor == HexParams.SelectedColor)
         {
             newCell = lastCell;
             newTriangle = lastTriangle;
             _dummy.transform.position = originalPosition;
         }
 
-        if (lastCell != newCell && ColorCurrentPosition)
+        if (lastCell != newCell && HexParams.ColorCurrentPosition)
         {
-            ColorCell(lastCell, DefaultColor, hexWrapAround != null);
+            ColorCell(lastCell, HexParams.DefaultColor, hexWrapAround != null);
             ColorCell(newCell, Color.green, hexWrapAround != null);
         }
 
         if (lastTriangle.Orientation == newTriangle.Orientation &&
             lastTriangle.Direction != newTriangle.Direction &&
-            ColorCurrentPosition)
+            HexParams.ColorCurrentPosition)
         {
             ResetCellTriangleColor(lastCell, lastTriangle, hexWrapAround != null);
             ColorCellTriangle(newCell, newTriangle, Color.red, hexWrapAround != null);
         }
 
-        Direction = newTriangle;
-        Sections = newTriangle.Sections();
-        CurrentCoordinates = newCell.Coordinates;
-        CurrentHexCell = newCell;
+        HexParams.Direction = newTriangle;
+        HexParams.Sections = newTriangle.Sections();
+        HexParams.CurrentCoordinates = newCell.Coordinates;
+        HexParams.CurrentHexCell = newCell;
 
         ProcessCoordinatesCommand();
 
@@ -521,7 +519,7 @@ public class HexGrid : MonoBehaviour
         {
             foreach (var cell in hashedCells.Values)
             {
-                ColorCell(cell, DefaultColor, true);
+                ColorCell(cell, HexParams.DefaultColor, true);
             }
 
             _polygons.Clear();
@@ -542,56 +540,56 @@ public class HexGrid : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.Backslash))
         {
-            int axisTypeIndex = ((int)Axis + (shiftPressed ? 2 : 1));
-            Axis = (HexAxis)(axisTypeIndex % 3);
+            int axisTypeIndex = ((int)HexParams.Axis + (shiftPressed ? 2 : 1));
+            HexParams.Axis = (HexAxis)(axisTypeIndex % 3);
         }
 
         if (Input.GetKeyDown(KeyCode.Tab))
         {
-            int vertexTypeIndex = ((int)VertexType + (shiftPressed ? 5 : 1));
-            VertexType = (HexVertexType)(vertexTypeIndex % 6);
+            int vertexTypeIndex = ((int)HexParams.VertexType + (shiftPressed ? 5 : 1));
+            HexParams.VertexType = (HexVertexType)(vertexTypeIndex % 6);
         }
 
         if (Input.GetKeyDown(KeyCode.Alpha1))
         {
-            int halfPlaneTypeIndex = ((int)HalfPlaneType + (shiftPressed ? 1 : 1));
-            HalfPlaneType = (HexHalfPlaneType)(halfPlaneTypeIndex % 2);
+            int halfPlaneTypeIndex = ((int)HexParams.HalfPlaneType + (shiftPressed ? 1 : 1));
+            HexParams.HalfPlaneType = (HexHalfPlaneType)(halfPlaneTypeIndex % 2);
         }
 
         if (Input.GetKeyDown(KeyCode.Alpha2))
         {
-            int triangleTypeIndex = ((int)TriangleType + (shiftPressed ? 1 : 1));
-            TriangleType = (HexTriangleType)(triangleTypeIndex % 2);
+            int triangleTypeIndex = ((int)HexParams.TriangleType + (shiftPressed ? 1 : 1));
+            HexParams.TriangleType = (HexTriangleType)(triangleTypeIndex % 2);
         }
 
         if (Input.GetKeyDown(KeyCode.Alpha3))
         {
-            int quadrangleTypeIndex = ((int)QuadrangleType + (shiftPressed ? 8 : 1));
-            QuadrangleType = (HexQuadrangleType)(quadrangleTypeIndex % 9);
+            int quadrangleTypeIndex = ((int)HexParams.QuadrangleType + (shiftPressed ? 8 : 1));
+            HexParams.QuadrangleType = (HexQuadrangleType)(quadrangleTypeIndex % 9);
         }
 
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            int modeIndex = ((int)Mode) + (shiftPressed ? (int)HexGridMode.Count -1 : 1);
-            Mode = (HexGridMode)(modeIndex % (int)HexGridMode.Count);
+            int modeIndex = ((int)HexParams.Mode) + (shiftPressed ? (int)HexGridMode.Count -1 : 1);
+            HexParams.Mode = (HexGridMode)(modeIndex % (int)HexGridMode.Count);
         }
 
         if (Input.GetKeyDown(KeyCode.U))
         {
-            SpawnUpwards = !SpawnUpwards;
+            HexParams.SpawnUpwards = !HexParams.SpawnUpwards;
         }
 
         if (Input.GetKeyDown(KeyCode.H))
         {
-            switch (Mode)
+            switch (HexParams.Mode)
             {
             case HexGridMode.Diagonal_Neighbors:
                 // Colors all diagonal coordinates
                 for (int i = 0; i < 6; ++i)
                 {
                     ColorCell(
-                        GetCell(CurrentCoordinates + HexDiagonalUtilities.TranslationVector(i)),
-                        ModeColor,
+                        GetCell(HexParams.CurrentCoordinates + HexDiagonalUtilities.TranslationVector(i)),
+                        HexParams.ModeColor,
                         hexWrapAround != null);
                 }
                 break;
@@ -599,12 +597,12 @@ public class HexGrid : MonoBehaviour
             case HexGridMode.Vertex:
                 ColorCell(
                     GetCell(
-                        CurrentCoordinates.GetVertex(
-                            VertexLength,
-                            VertexType,
+                        HexParams.CurrentCoordinates.GetVertex(
+                            HexParams.VertexLength,
+                            HexParams.VertexType,
                             Orientation,
-                            Axis)),
-                    ModeColor,
+                            HexParams.Axis)),
+                    HexParams.ModeColor,
                     hexWrapAround != null);
                 break;
 
@@ -623,36 +621,36 @@ public class HexGrid : MonoBehaviour
                     ColorCell(
                         GetCell(
                             rotatee.Coordinates.Rotate(
-                                CurrentCoordinates,
+                                HexParams.CurrentCoordinates,
                                 angle)),
-                        ModeColor,
+                        HexParams.ModeColor,
                         hexWrapAround != null);
                 }
                 break;
 
             case HexGridMode.HexLine:
                 var hexLine = new HexLine(
-                    Axis,
-                    Axis == HexAxis.X
-                        ? CurrentCoordinates.X
-                        : Axis == HexAxis.Y
-                            ? CurrentCoordinates.Y
-                            : CurrentCoordinates.Z);
-                foreach (var coords in hexLine.Range(CurrentCoordinates, x => hashedCells.ContainsKey(x)))
+                    HexParams.Axis,
+                    HexParams.Axis == HexAxis.X
+                        ? HexParams.CurrentCoordinates.X
+                        : HexParams.Axis == HexAxis.Y
+                            ? HexParams.CurrentCoordinates.Y
+                            : HexParams.CurrentCoordinates.Z);
+                foreach (var coords in hexLine.Range(HexParams.CurrentCoordinates, x => hashedCells.ContainsKey(x)))
                 {
                     var cell = GetCell(coords);
-                    if (!cell.IsPadding || WrapAroundHexGeometry)
+                    if (!cell.IsPadding || HexParams.WrapAroundHexGeometry)
                     {
-                        ColorCell(cell, ModeColor, WrapAroundHexGeometry);
+                        ColorCell(cell, HexParams.ModeColor, HexParams.WrapAroundHexGeometry);
                     }
 
-                    if (WrapAroundHexGeometry && cell.IsPadding)
+                    if (HexParams.WrapAroundHexGeometry && cell.IsPadding)
                     {
                         _lines.Add(new HexLine(
-                            Axis,
-                            Axis == HexAxis.X
+                            HexParams.Axis,
+                            HexParams.Axis == HexAxis.X
                                 ? cell.PaddingCoordinates.X
-                                : Axis == HexAxis.Y
+                                : HexParams.Axis == HexAxis.Y
                                     ? cell.PaddingCoordinates.Y
                                     : cell.PaddingCoordinates.Z));
                     }
@@ -663,21 +661,21 @@ public class HexGrid : MonoBehaviour
             case HexGridMode.Reflections:
                 foreach (var line in _lines)
                 {
-                    var hex = CurrentCoordinates.Reflect(line);
+                    var hex = HexParams.CurrentCoordinates.Reflect(line);
                     if (hexWrapAround != null)
                     {
                         hex = hexWrapAround.TransformHex(hex);
                     }
-                    ColorCell(GetCell(hex), ModeColor, hexWrapAround != null);
+                    ColorCell(GetCell(hex), HexParams.ModeColor, hexWrapAround != null);
                 }
                 break;
 
             case HexGridMode.Interpolated_Line:
-                var mouseCell = GetMouseCell(!WrapAroundHexGeometry);
+                var mouseCell = GetMouseCell(!HexParams.WrapAroundHexGeometry);
                 if (mouseCell != null)
                 {
                     foreach (var coords in HexInterpolatedLine.Range(
-                        CurrentCoordinates,
+                        HexParams.CurrentCoordinates,
                         mouseCell.Coordinates,
                         _metrics,
                         Orientation,
@@ -685,9 +683,9 @@ public class HexGrid : MonoBehaviour
                         x => hashedCells.ContainsKey(x)))
                     {
                         var cell = GetCell(coords);
-                        if (!cell.IsPadding || WrapAroundHexGeometry)
+                        if (!cell.IsPadding || HexParams.WrapAroundHexGeometry)
                         {
-                            ColorCell(cell, ModeColor, WrapAroundHexGeometry);
+                            ColorCell(cell, HexParams.ModeColor, HexParams.WrapAroundHexGeometry);
                         }
                     }
                 }
@@ -695,73 +693,73 @@ public class HexGrid : MonoBehaviour
 
             case HexGridMode.HexHalfPlane:
                 var halfPlane = new HexHalfPlane(
-                    Axis,
-                    HalfPlaneType,
-                    Axis == HexAxis.X
-                        ? CurrentCoordinates.X
-                        : Axis == HexAxis.Y
-                            ? CurrentCoordinates.Y
-                            : CurrentCoordinates.Z);
+                    HexParams.Axis,
+                    HexParams.HalfPlaneType,
+                    HexParams.Axis == HexAxis.X
+                        ? HexParams.CurrentCoordinates.X
+                        : HexParams.Axis == HexAxis.Y
+                            ? HexParams.CurrentCoordinates.Y
+                            : HexParams.CurrentCoordinates.Z);
                     foreach (var cell in hashedCells.Values)
                     {
                         if (!cell.IsPadding && halfPlane.Contains(cell.Coordinates))
                         {
-                            ColorCell(cell, ModeColor, false);
+                            ColorCell(cell, HexParams.ModeColor, false);
                         }
                     }
                 break;
 
             case HexGridMode.Triangle:
                 var triangle = HexTriangle.Spawn(
-                    CurrentCoordinates,
-                    TriangleLength,
-                    TriangleType,
+                    HexParams.CurrentCoordinates,
+                    HexParams.TriangleLength,
+                    HexParams.TriangleType,
                     Orientation,
-                    Axis,
-                    SpawnUpwards);
+                    HexParams.Axis,
+                    HexParams.SpawnUpwards);
                 foreach (var coords in triangle.Range(x => hashedCells.ContainsKey(x)))
                 {
                     var cell = GetCell(coords);
-                    if (!cell.IsPadding || WrapAroundHexGeometry)
+                    if (!cell.IsPadding || HexParams.WrapAroundHexGeometry)
                     {
-                        ColorCell(cell, ModeColor, WrapAroundHexGeometry);
+                        ColorCell(cell, HexParams.ModeColor, HexParams.WrapAroundHexGeometry);
                     }
                 }
                 _polygons.Add(triangle.ConvexPolygon);
-                TriangleType = triangle.Type;
+                HexParams.TriangleType = triangle.Type;
                 break;
 
             case HexGridMode.Quadrangle:
                 var quadrangle = HexQuadrangle.Spawn(
-                    CurrentCoordinates,
-                    QuadrangleWidth,
-                    QuadrangleHeight,
-                    QuadrangleType,
+                    HexParams.CurrentCoordinates,
+                    HexParams.QuadrangleWidth,
+                    HexParams.QuadrangleHeight,
+                    HexParams.QuadrangleType,
                     Orientation,
-                    Axis,
-                    SpawnUpwards);
+                    HexParams.Axis,
+                    HexParams.SpawnUpwards);
                 foreach (var coords in quadrangle.Range(x => hashedCells.ContainsKey(x)))
                 {
                     var cell = GetCell(coords);
-                    if (!cell.IsPadding || WrapAroundHexGeometry)
+                    if (!cell.IsPadding || HexParams.WrapAroundHexGeometry)
                     {
-                        ColorCell(cell, ModeColor, WrapAroundHexGeometry);
+                        ColorCell(cell, HexParams.ModeColor, HexParams.WrapAroundHexGeometry);
                     }
                 }
                 _polygons.Add(quadrangle.ConvexPolygon);
-                QuadrangleTypeOnX = quadrangle.Type[HexAxis.X];
-                QuadrangleTypeOnY = quadrangle.Type[HexAxis.Y];
-                QuadrangleTypeOnZ = quadrangle.Type[HexAxis.Z];
+                HexParams.QuadrangleTypeOnX = quadrangle.Type[HexAxis.X];
+                HexParams.QuadrangleTypeOnY = quadrangle.Type[HexAxis.Y];
+                HexParams.QuadrangleTypeOnZ = quadrangle.Type[HexAxis.Z];
                 break;
 
             case HexGridMode.RegularHexagon:
-                var hexagon = new HexRegularHexagon(CurrentCoordinates, RegularHexagonRadius);
+                var hexagon = new HexRegularHexagon(HexParams.CurrentCoordinates, HexParams.RegularHexagonRadius);
                 foreach (var coords in hexagon.Range(x => hashedCells.ContainsKey(x)))
                 {
                     var cell = GetCell(coords);
-                    if (!cell.IsPadding || WrapAroundHexGeometry)
+                    if (!cell.IsPadding || HexParams.WrapAroundHexGeometry)
                     {
-                        ColorCell(cell, ModeColor, WrapAroundHexGeometry);
+                        ColorCell(cell, HexParams.ModeColor, HexParams.WrapAroundHexGeometry);
                     }
                 }
                 _polygons.Add(hexagon.ConvexPolygon);
@@ -771,49 +769,49 @@ public class HexGrid : MonoBehaviour
                 foreach (var coords in HexConvexPolygon.Intersection(_polygons.ToArray(), x => hashedCells.ContainsKey(x)))
                 {
                     var cell = GetCell(coords);
-                    if (!cell.IsPadding || WrapAroundHexGeometry)
+                    if (!cell.IsPadding || HexParams.WrapAroundHexGeometry)
                     {
-                        ColorCell(cell, IntersectionColor, WrapAroundHexGeometry);
+                        ColorCell(cell, HexParams.IntersectionColor, HexParams.WrapAroundHexGeometry);
                     }
                 }
                 break;
 
             case HexGridMode.Ring:
-                foreach (var coords in CurrentCoordinates.Ring(RegularHexagonRadius))
+                foreach (var coords in HexParams.CurrentCoordinates.Ring(HexParams.RegularHexagonRadius))
                 {
                     var cell = GetCell(coords);
-                    if (!cell.IsPadding || WrapAroundHexGeometry)
+                    if (!cell.IsPadding || HexParams.WrapAroundHexGeometry)
                     {
-                        ColorCell(cell, ModeColor, WrapAroundHexGeometry);
+                        ColorCell(cell, HexParams.ModeColor, HexParams.WrapAroundHexGeometry);
                     }
                 }
                 break;
 
             case HexGridMode.Spiral:
-                foreach (var coords in CurrentCoordinates.Spiral(RegularHexagonRadius))
+                foreach (var coords in HexParams.CurrentCoordinates.Spiral(HexParams.RegularHexagonRadius))
                 {
                     var cell = GetCell(coords);
-                    if (!cell.IsPadding || WrapAroundHexGeometry)
+                    if (!cell.IsPadding || HexParams.WrapAroundHexGeometry)
                     {
-                        ColorCell(cell, ModeColor, WrapAroundHexGeometry);
+                        ColorCell(cell, HexParams.ModeColor, HexParams.WrapAroundHexGeometry);
                     }
                 }
                 break;
 
             case HexGridMode.Flood:
-                foreach (var coords in CurrentCoordinates.Flood(FloodMovement, WalkableCoordinates))
+                foreach (var coords in HexParams.CurrentCoordinates.Flood(HexParams.FloodMovement, WalkableCoordinates))
                 {
                     var cell = GetCell(coords);
-                    if (!cell.IsPadding || WrapAroundHexGeometry)
+                    if (!cell.IsPadding || HexParams.WrapAroundHexGeometry)
                     {
-                        ColorCell(cell, ModeColor, WrapAroundHexGeometry);
+                        ColorCell(cell, HexParams.ModeColor, HexParams.WrapAroundHexGeometry);
                     }
                 }
                 break;
 
             case HexGridMode.Visible:
                 var visibleMouseCell = GetMouseCell();
-                IsMouseVisible = CurrentCoordinates.Visible(
+                HexParams.IsMouseVisible = HexParams.CurrentCoordinates.Visible(
                     visibleMouseCell.Coordinates,
                     _metrics,
                     Orientation,
@@ -822,31 +820,31 @@ public class HexGrid : MonoBehaviour
                 break;
 
             case HexGridMode.FieldOfView:
-                foreach (var coords in CurrentCoordinates.FieldOfView(
-                    FieldOfViewRadius,
+                foreach (var coords in HexParams.CurrentCoordinates.FieldOfView(
+                    HexParams.FieldOfViewRadius,
                     _metrics,
                     Orientation,
                     OffsetType,
                     WalkableCoordinates))
                 {
                     var cell = GetCell(coords);
-                    if (!cell.IsPadding || WrapAroundHexGeometry)
+                    if (!cell.IsPadding || HexParams.WrapAroundHexGeometry)
                     {
-                        ColorCell(cell, ModeColor, WrapAroundHexGeometry);
+                        ColorCell(cell, HexParams.ModeColor, HexParams.WrapAroundHexGeometry);
                     }
                 }
                 break;
 
             case HexGridMode.FindPath:
                 var pathMouseCell = GetMouseCell();
-                foreach (var coords in CurrentCoordinates.FindPath(
+                foreach (var coords in HexParams.CurrentCoordinates.FindPath(
                     pathMouseCell.Coordinates,
                     WalkableCoordinates))
                 {
                     var cell = GetCell(coords);
-                    if (!cell.IsPadding || WrapAroundHexGeometry)
+                    if (!cell.IsPadding || HexParams.WrapAroundHexGeometry)
                     {
-                        ColorCell(cell, ModeColor, WrapAroundHexGeometry);
+                        ColorCell(cell, HexParams.ModeColor, HexParams.WrapAroundHexGeometry);
                     }
                 }
                 break;
@@ -856,8 +854,6 @@ public class HexGrid : MonoBehaviour
 
     public bool WalkableCoordinates(HexCubeCoordinates coords)
         => hashedCells.ContainsKey(coords) &&
-            hashedCells[coords].ViewColor != SelectedColor &&
-            (!hashedCells[coords].IsPadding || (hashedCells[coords].IsPadding && WrapAroundHexGeometry));
-
-    #endregion
+            hashedCells[coords].ViewColor != HexParams.SelectedColor &&
+            (!hashedCells[coords].IsPadding || (hashedCells[coords].IsPadding && HexParams.WrapAroundHexGeometry));
 }
