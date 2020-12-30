@@ -136,6 +136,8 @@ public class HexGrid : MonoBehaviour
     private GameObject _dummy;
     [SerializeField]
     private PhysHex.Particle _particle;
+    private float ForceMultiplier = 10f;
+    private float ClampValue = 500f;
     private CameraMovementController _cameraMovement;
 
     private List<HexConvexPolygon> _polygons = new List<HexConvexPolygon>();
@@ -212,21 +214,12 @@ public class HexGrid : MonoBehaviour
 
     private void Reset()
     {
-        // Create a PhysHex particle that will be the placeholder for the dummy
-        // sphere to showcase movement.
-        _particle = new PhysHex.Particle {
-            Damping = 0.05f,
-            Mass = 10f,
-            Force = new PhysHex.AccruedVector3(Vector3.zero, 10f),
-        };
-
         TriangulateMesh();
 
         // Create a dummy sphere that will be used to get hooked up to the camera.
         // Start its position at origin and with a rotation of 270 degrees, so that
         // when the camera is hooked it starts looking towards negative Z (0, 0, -1)
         _dummy = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        _dummy.transform.position = _particle.Position;
         _dummy.transform.rotation = Quaternion.Euler(0f, 270f, 0f);
         _cameraMovement = Camera.main.GetComponent<CameraMovementController>();
         _cameraMovement.ResetCamera();
@@ -238,6 +231,15 @@ public class HexGrid : MonoBehaviour
             ColorCellTriangle(_dummy.transform.position, Color.red, hexWrapAround != null);
             UpdateColors();
         }
+
+        // Create a PhysHex particle that will be the placeholder for the dummy
+        // sphere to showcase movement.
+        _particle = new PhysHex.Particle {
+            Damping = 0.75f,
+            Mass = 10f,
+            Force = new PhysHex.AccruedVector3(Vector3.zero, ForceMultiplier),
+        };
+        _dummy.transform.position = _particle.Position;
     }
 
     private HexCell CreateCellFromOffsetCoordinate(int x, int z)
@@ -389,12 +391,15 @@ public class HexGrid : MonoBehaviour
     {
         if (UsePhysHex)
         {
+            bool anyDirectionActive = false;
+
             if (IsDirectionActive(InputDirection.Left))
             {
                 var force = -Camera.main.transform.right;
                 force.y = _dummy.transform.position.y;
                 force.Normalize();
                 _particle.Force.Accrue(force);
+                anyDirectionActive = true;
             }
 
             if (IsDirectionActive(InputDirection.Right))
@@ -403,6 +408,7 @@ public class HexGrid : MonoBehaviour
                 force.y = _dummy.transform.position.y;
                 force.Normalize();
                 _particle.Force.Accrue(force);
+                anyDirectionActive = true;
             }
 
             if (IsDirectionActive(InputDirection.Down))
@@ -411,6 +417,7 @@ public class HexGrid : MonoBehaviour
                 force.y = _dummy.transform.position.y;
                 force.Normalize();
                 _particle.Force.Accrue(force);
+                anyDirectionActive = true;
             }
 
             if (IsDirectionActive(InputDirection.Up))
@@ -419,10 +426,20 @@ public class HexGrid : MonoBehaviour
                 force.y = _dummy.transform.position.y;
                 force.Normalize();
                 _particle.Force.Accrue(force);
+                anyDirectionActive = true;
             }
 
-            _particle.Force = new PhysHex.AccruedVector3(Vector3.ClampMagnitude(_particle.Force.Total, 1000f), _particle.Force.Multiplier);
+            _particle.Force = new PhysHex.AccruedVector3(
+                Vector3.ClampMagnitude(
+                    _particle.Force.Total, ClampValue), _particle.Force.Multiplier);
+            _particle.Pause = !anyDirectionActive;
             _particle.Integrate(Time.deltaTime);
+
+            if (!anyDirectionActive)
+            {
+                _particle.Force.Reset(ForceMultiplier);
+                _particle.Velocity = Vector3.zero;
+            }
 
             _dummy.transform.position = _particle.Position;
         }

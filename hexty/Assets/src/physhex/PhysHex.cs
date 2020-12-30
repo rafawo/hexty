@@ -106,6 +106,16 @@ public class AccruedVector3
         Remove(k);
         Add(k, v);
     }
+
+    /// <summary>
+    /// Resets the entire accrued vector3 values to 0.
+    /// </summary>
+    public void Reset(float multiplier = 1)
+    {
+        m_Total = Vector3.zero;
+        m_Multiplier = multiplier;
+        m_Modifiers.Clear();
+    }
 }
 
 /// <summary>
@@ -169,6 +179,11 @@ public class Particle
     public AccruedVector3 Force = new AccruedVector3();
 
     /// <summary>
+    /// Determines if Integrate updates the position and velocity when called.
+    /// </summary>
+    public bool Pause = false;
+
+    /// <summary>
     /// Default constructor of a particle at the origin without movement.
     /// </summary>
     public Particle() { }
@@ -189,6 +204,8 @@ public class Particle
     /// <param name="duration">Supplies the duration of time units that have occured since the last time.</param>
     public void Integrate(float duration)
     {
+        if (Pause) return;
+
         // Update linear position
         Position += Velocity * duration;
 
