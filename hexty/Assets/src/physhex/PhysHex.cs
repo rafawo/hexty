@@ -1,8 +1,77 @@
+using System;
+using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace PhysHex
 {
+
+/// <summary>
+/// Simple class that wraps the necessary properties
+/// used to implement a perishable object that expires
+/// after the accumulated duration has reached the expiry.
+/// </summary>
+public class Perishable
+{
+    /// <summary>
+    /// Current duration of the perishable since the beginning.
+    /// </summary>
+    public float Epoch = 0;
+
+    /// <summary>
+    /// Expiration threshold.
+    /// </summary>
+    public float Expiry = Perishable.ExpiryDefault;
+
+    /// <summary>
+    /// Optional stop predicate that uses the Context member to determine if this perishable
+    /// should expire regardless of the expiry.
+    /// Executed when the Expired property is queried.
+    /// </summary>
+    public Predicate<object> StopPredicate = null;
+
+    /// <summary>
+    /// Optional context that is passed to the stop predicate when the Expired property is queried.
+    /// </summary>
+    public object Context = null;
+
+    /// <summary>
+    /// Default expiry value.
+    /// -1 means no expiration.
+    /// </summary>
+    public const float ExpiryDefault = -1;
+
+    /// <summary>
+    /// Computes whether the perishable has expired.
+    /// </summary>
+    /// <returns></returns>
+    public bool Expired { get => (Expiry > 0 && Epoch > Expiry) || (StopPredicate != null && StopPredicate(Context)); }
+
+    /// <summary>
+    /// Integrates the perishable object by increasing the epoch with the supplied duration value
+    /// and then returns whether the integration was successful. A successful integrate means that the perishable
+    /// didn't expire in the increased duration.
+    /// </summary>
+    /// <param name="duration">Supplies the duration of time units that have occured since the last Integrate function call.</param>
+    /// <returns>True if the perishable hasn't expired after the increase in duration.</returns>
+    public bool Integrate(float duration)
+    {
+        Epoch += duration;
+        return !Expired;
+    }
+}
+
+/// <summary>
+/// Simple class that wraps the necessary properties
+/// used to implement a vector3 that expires
+/// after the accumulated duration has reached the expiry.
+/// </summary>
+[System.Serializable]
+public class PerishableVector3
+{
+    public Vector3 V = Vector3.zero;
+    public Perishable Perishable;
+}
 
 /// <summary>
 /// Represents a vector3 that can be accrued to from
@@ -29,7 +98,7 @@ public class AccruedVector3
     [SerializeField]
     private float m_Multiplier = 1;
     [SerializeField]
-    private Dictionary<string, Vector3> m_Modifiers = new Dictionary<string, Vector3>();
+    private Dictionary<string, PerishableVector3> m_Modifiers = new Dictionary<string, PerishableVector3>();
 
     /// <summary>
     /// Default constructor that default initializes properties.
@@ -66,32 +135,41 @@ public class AccruedVector3
     /// the total.
     /// If the name doesn't exist, the supplied vector value
     /// is accrued into the total.
+    /// An expiration time can be optionally set to automatically remove
+    /// the accrued named vector3 value.
     /// </summary>
-    /// <param name="k">vector3 value name</param>
-    /// <param name="v">vector3 value</param>
-    public void Add(string k, Vector3 v)
+    /// <param name="k">vector3 value name.</param>
+    /// <param name="v">vector3 value.</param>
+    /// <param name="expiry">Optionally supplies xpiration time.</param>
+    public void Add(string k, Vector3 v, float expiry = Perishable.ExpiryDefault)
     {
         if (m_Modifiers.ContainsKey(k))
         {
-            m_Modifiers[k] += v;
+            m_Modifiers[k].V += v;
         }
         else
         {
-            m_Modifiers.Add(k, v);
+            m_Modifiers.Add(k, new PerishableVector3 {
+                V = v,
+                Perishable = new Perishable {
+                    Epoch = 0,
+                    Expiry = expiry,
+                },
+            });
         }
 
-        Accrue(m_Modifiers[k]);
+        Accrue(m_Modifiers[k].V);
     }
 
     /// <summary>
     /// Removes all accrued value from the specified named value.
     /// </summary>
-    /// <param name="k">vector3 value name</param>
+    /// <param name="k">vector3 value name.</param>
     public void Remove(string k)
     {
         if (m_Modifiers.ContainsKey(k))
         {
-            Accrue(-m_Modifiers[k]);
+            Accrue(-m_Modifiers[k].V);
             m_Modifiers.Remove(k);
         }
     }
@@ -101,10 +179,17 @@ public class AccruedVector3
     /// </summary>
     /// <param name="k">vector3 value name.</param>
     /// <param name="v">vector3 value.</param>
-    public void Set(string k, Vector3 v)
+    /// <param name="expiry">Optionally supplies xpiration time.</param>
+    public void Set(string k, Vector3 v, float expiry = Perishable.ExpiryDefault)
     {
         Remove(k);
-        Add(k, v);
+        Add(k, v, expiry);
+    }
+
+    public PerishableVector3 this[string k]
+    {
+        get => m_Modifiers.ContainsKey(k) ? m_Modifiers[k] : null;
+        set => Set(k, value.V, value.Perishable.Expiry);
     }
 
     /// <summary>
@@ -116,6 +201,14 @@ public class AccruedVector3
         m_Multiplier = multiplier;
         m_Modifiers.Clear();
     }
+
+    /// <summary>
+    /// "Integrates" the accrued vector3 by the supplied duration
+    /// by removing any accrued named vector3 value that had expiration.
+    /// </summary>
+    /// <param name="duration">Supplies the duration of time units that have occured since the last Integrate function call.</param>
+    public void Integrate(float duration) =>
+        m_Modifiers.Where(entry => !entry.Value.Perishable.Integrate(duration)).ToList().ForEach(entry => Remove(entry.Key));
 }
 
 /// <summary>
@@ -201,10 +294,13 @@ public class Particle
     /// This function uses a Newton-Euler integration method, which is a linear approximation
     /// of the correct integral. For this reason it may be inaccurate in some cases.
     /// </summary>
-    /// <param name="duration">Supplies the duration of time units that have occured since the last time.</param>
+    /// <param name="duration">Supplies the duration of time units that have occured since the last Integrate function call.</param>
     public void Integrate(float duration)
     {
         if (Pause) return;
+
+        Force.Integrate(duration);
+        Acceleration.Integrate(duration);
 
         // Update linear position
         Position += Velocity * duration;

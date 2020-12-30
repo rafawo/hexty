@@ -17,28 +17,15 @@ public class Projectile
     /// <summary>
     /// Physhex unit of simulation.
     /// </summary>
-    public Particle Particle;
+    public Particle Particle { get; private set;}
 
     /// <summary>
-    /// Accumulated duration since the projectile started
-    /// (either construction or reset).
+    /// Perishable traits of the projectile.
+    /// Every time the projectile is set to a new particle,
+    /// the Context property of the perishable member is
+    /// set to the same particle object.
     /// </summary>
-    public float Epoch { get => m_Epoch; }
-    private float m_Epoch;
-
-    /// <summary>
-    /// Expiry threshold for the epoch to stop calling
-    /// into the particle's integrate method.
-    /// The particle can still be manually integrated
-    /// via the public Particle property.
-    /// </summary>
-    public float Expiry;
-
-    /// <summary>
-    /// Optional additional predicate that stops the projectile
-    /// if the particle meets the predicate's criteria.
-    /// </summary>
-    public Predicate<Particle> StopPredicate;
+    public Perishable Perishable { get; private set; }
 
     /// <summary>
     /// Constructor that configures a projectile with an expiry threshold
@@ -61,16 +48,13 @@ public class Projectile
     /// <param name="particle">Physhex unit of simulation starting point.</param>
     public void Reset(float expiry, Particle particle)
     {
-        m_Epoch = 0;
-        Expiry = expiry;
+        Perishable = new Perishable {
+            Epoch = 0,
+            Expiry = expiry,
+            Context = particle,
+        };
         Particle = particle;
     }
-
-    /// <summary>
-    /// Property that returns whether the projectile has expired.
-    /// </summary>
-    /// <returns></returns>
-    public bool Expired { get => (m_Epoch > Expiry) || (StopPredicate != null && StopPredicate(Particle)); }
 
     /// <summary>
     /// Integrate the projectile by integrating the underlying
@@ -81,8 +65,7 @@ public class Projectile
     /// <param name="duration">Supplies the duration of time units that have occured since the last time.</param>
     public void Integrate(float duration)
     {
-        m_Epoch += duration;
-        if (!Expired)
+        if (Perishable.Integrate(duration))
         {
             Particle.Integrate(duration);
         }
