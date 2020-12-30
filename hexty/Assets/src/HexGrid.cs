@@ -215,7 +215,7 @@ public class HexGrid : MonoBehaviour
         // Create a PhysHex particle that will be the placeholder for the dummy
         // sphere to showcase movement.
         _particle = new PhysHex.Particle {
-            Damping = 0.5f,
+            Damping = 0.05f,
             Mass = 10f,
             Force = new PhysHex.AccruedVector3(Vector3.zero, 10f),
         };
@@ -371,11 +371,25 @@ public class HexGrid : MonoBehaviour
         }
     }
 
+    private enum InputDirection { Left, Right, Up, Down }
+
+    private bool IsDirectionActive(InputDirection direction)
+    {
+        switch (direction)
+        {
+            case InputDirection.Left: return Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A) || Input.GetAxis("Horizontal") < 0;
+            case InputDirection.Right: return Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D) || Input.GetAxis("Horizontal") > 0;
+            case InputDirection.Down: return Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.S) || Input.GetAxis("Vertical") < 0;
+            case InputDirection.Up: return Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W) || Input.GetAxis("Vertical") > 0;
+        }
+        return false;
+    }
+
     private void MoveDummy()
     {
         if (UsePhysHex)
         {
-            if (Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A))
+            if (IsDirectionActive(InputDirection.Left))
             {
                 var force = -Camera.main.transform.right;
                 force.y = _dummy.transform.position.y;
@@ -383,7 +397,7 @@ public class HexGrid : MonoBehaviour
                 _particle.Force.Accrue(force);
             }
 
-            if (Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D))
+            if (IsDirectionActive(InputDirection.Right))
             {
                 var force = Camera.main.transform.right;
                 force.y = _dummy.transform.position.y;
@@ -391,7 +405,7 @@ public class HexGrid : MonoBehaviour
                 _particle.Force.Accrue(force);
             }
 
-            if (Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.S))
+            if (IsDirectionActive(InputDirection.Down))
             {
                 var force = -Camera.main.transform.forward;
                 force.y = _dummy.transform.position.y;
@@ -399,7 +413,7 @@ public class HexGrid : MonoBehaviour
                 _particle.Force.Accrue(force);
             }
 
-            if (Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W))
+            if (IsDirectionActive(InputDirection.Up))
             {
                 var force = Camera.main.transform.forward;
                 force.y = _dummy.transform.position.y;
@@ -409,29 +423,30 @@ public class HexGrid : MonoBehaviour
 
             _particle.Force = new PhysHex.AccruedVector3(Vector3.ClampMagnitude(_particle.Force.Total, 1000f), _particle.Force.Multiplier);
             _particle.Integrate(Time.deltaTime);
+
             _dummy.transform.position = _particle.Position;
         }
         else
         {
             var force = Vector3.zero;
 
-            if (Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A))
+            if (IsDirectionActive(InputDirection.Left))
             {
                 force = -Camera.main.transform.right;
                 force.Normalize();
             }
-            else if (Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D))
+            else if (IsDirectionActive(InputDirection.Right))
             {
                 force = Camera.main.transform.right;
                 force.Normalize();
             }
 
-            if (Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.S))
+            if (IsDirectionActive(InputDirection.Down))
             {
                 force = -Camera.main.transform.forward;
                 force.Normalize();
             }
-            else if (Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W))
+            else if (IsDirectionActive(InputDirection.Up))
             {
                 force = Camera.main.transform.forward;
                 force.Normalize();

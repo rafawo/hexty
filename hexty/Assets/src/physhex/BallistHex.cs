@@ -11,6 +11,7 @@ namespace PhysHex
 /// for other things that are temporary and have an initial particle
 /// configuration when created.
 /// </summary>
+[System.Serializable]
 public class Projectile
 {
     /// <summary>
@@ -180,7 +181,7 @@ public class ProjectileRepository
                 float.MaxValue,
                 new Particle {
                     Mass = 1f, // 1 kg - Mostly blast damage
-                    Velocity = new Vector3(0f, 0f, 10f), // 50 m/s
+                    Velocity = new Vector3(0f, 0f, 10f), // 5 m/s
                     Acceleration = new AccruedVector3(new Vector3(0f, 0.6f, 0f)),
                     Damping = 0.9f,
                 }
