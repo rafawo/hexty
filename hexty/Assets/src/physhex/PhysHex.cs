@@ -301,9 +301,10 @@ public class Particle
     /// of the correct integral. For this reason it may be inaccurate in some cases.
     /// </summary>
     /// <param name="duration">Supplies the duration of time units that have occured since the last Integrate function call.</param>
-    public void Integrate(float duration)
+    /// <returns>True if the particle was able to integrate because it's not paused.</returns>
+    public bool Integrate(float duration)
     {
-        if (Pause) return;
+        if (Pause) return false;
 
         Force.Integrate(duration);
         Acceleration.Integrate(duration);
@@ -320,6 +321,8 @@ public class Particle
         // Impose drag
         var d = Mathf.Pow(Damping, duration);
         Velocity *= d;
+
+        return true;
     }
 }
 

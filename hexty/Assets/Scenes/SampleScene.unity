@@ -548,56 +548,70 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83a44a3bd92c8434196aa9c145b86476, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  UsePhysHex: 1
-  Width: 20
-  Height: 20
-  PaddingWidth: 10
-  PaddingHeight: 10
-  OuterRadius: 10
   CellPrefab: {fileID: 3222501192175501508, guid: bfe8e7bbbe931e7438c4d6402e5ef2b6,
     type: 3}
-  DefaultColor: {r: 1, g: 1, b: 1, a: 1}
-  PaddingColor: {r: 0.35978103, g: 0.990566, b: 0.9221991, a: 1}
-  ModeColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-  IntersectionColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  SelectedColor: {r: 1, g: 0, b: 1, a: 1}
   CellLabelPrefab: {fileID: 5183563927340717737, guid: cffe565179c93814ab6774fc5d431c91,
     type: 3}
-  UseEvenOffset: 0
-  UseFlatHex: 0
-  HideHexLabel: 0
-  ColorCurrentPosition: 0
-  WrapAroundHexGeometry: 1
-  SpawnUpwards: 0
-  VertexLength: 3
-  TriangleLength: 3
-  QuadrangleWidth: 2
-  QuadrangleHeight: 3
-  RegularHexagonRadius: 3
-  FloodMovement: 5
-  FieldOfViewRadius: 5
-  Axis: 2
-  VertexType: 0
-  HalfPlaneType: 0
-  TriangleType: 0
-  QuadrangleType: 0
-  QuadrangleTypeOnX: 0
-  QuadrangleTypeOnY: 0
-  QuadrangleTypeOnZ: 0
-  Mode: 0
-  IsMouseVisible: 1
-  CurrentCoordinates:
-    x: 0
-    z: 0
-  CurrentHexCell: {fileID: 0}
-  Sections: 
-  _p:
-    Position: {x: 0, y: 0, z: 0}
-    Velocity: {x: 0, y: 0, z: 0}
-    Acceleration: {x: 0, y: 0, z: 0}
-    Damping: 0
-    InverseMass: Infinity
-    Force: {x: 0, y: 0, z: 0}
+  HexParams:
+    Width: 6
+    Height: 6
+    PaddingWidth: 1
+    PaddingHeight: 1
+    OuterRadius: 10
+    DefaultColor: {r: 1, g: 1, b: 1, a: 1}
+    PaddingColor: {r: 1, g: 1, b: 1, a: 1}
+    ModeColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+    IntersectionColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+    SelectedColor: {r: 1, g: 0, b: 1, a: 1}
+    UseEvenOffset: 0
+    UseFlatHex: 0
+    HideHexLabel: 0
+    ColorCurrentPosition: 1
+    WrapAroundHexGeometry: 0
+    SpawnUpwards: 1
+    VertexLength: 3
+    TriangleLength: 3
+    QuadrangleWidth: 3
+    QuadrangleHeight: 5
+    RegularHexagonRadius: 3
+    FloodMovement: 5
+    FieldOfViewRadius: 5
+    Axis: 2
+    VertexType: 0
+    HalfPlaneType: 0
+    TriangleType: 0
+    QuadrangleType: 0
+    QuadrangleTypeOnX: 0
+    QuadrangleTypeOnY: 0
+    QuadrangleTypeOnZ: 0
+    Mode: 0
+    IsMouseVisible: 1
+    CurrentCoordinates:
+      x: 0
+      z: 0
+    CurrentHexCell: {fileID: 0}
+    Sections: 
+  PhysHexParams:
+    UsePhysHex: 1
+    Particle:
+      Position: {x: 0, y: 0, z: 0}
+      Velocity: {x: 0, y: 0, z: 0}
+      Acceleration:
+        m_Total: {x: 0, y: 0, z: 0}
+        m_Multiplier: 1
+      Damping: 1
+      InverseMass: 0.1
+      Force:
+        m_Total: {x: 0, y: 0, z: 0}
+        m_Multiplier: 1
+      Pause: 0
+    ForceMultiplier: 10
+    ClampValue: 500
+    UseCustomProjectile: 0
+    ProjectileType: PISTOL
+    ProjectileExpirySeconds: 4
+    Projectiles: []
+    MaxProjectiles: 10
 --- !u!4 &952995617
 Transform:
   m_ObjectHideFlags: 0

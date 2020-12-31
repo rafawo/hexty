@@ -68,13 +68,9 @@ public class Projectile
     /// this doesn't integrate the particle.
     /// </summary>
     /// <param name="duration">Supplies the duration of time units that have occured since the last time.</param>
-    public void Integrate(float duration)
-    {
-        if (Perishable.Integrate(duration))
-        {
-            Particle.Integrate(duration);
-        }
-    }
+    /// <returns>True if the perishable hasn't expired after the increase in duration.</returns>
+    public bool Integrate(float duration)
+        => Perishable.Integrate(duration) ? Particle.Integrate(duration) : false;
 
     /// <summary>
     /// Represents a "null" projectile with an object that is still
@@ -82,7 +78,7 @@ public class Projectile
     /// However, the physhex simulation wouldn't do anything with
     /// this projectile.
     /// </summary>
-    public static Projectile Nill = new Projectile(-1f, new Particle());
+    public static Projectile Nil = new Projectile(-1f, new Particle());
 }
 
 public static class ProjectileCommonTypeName
@@ -115,7 +111,7 @@ public class ProjectileRepository
         {
             lock (gm_Lock)
             {
-                return gm_Projectiles.ContainsKey(name) ? gm_Projectiles[name] : Projectile.Nill;
+                return gm_Projectiles.ContainsKey(name) ? gm_Projectiles[name] : Projectile.Nil;
             }
         }
 

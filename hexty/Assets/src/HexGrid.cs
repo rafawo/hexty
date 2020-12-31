@@ -6,6 +6,7 @@
 
 using HexGeometry;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -42,15 +43,11 @@ public class HexGridUx
 
     public float OuterRadius = 10f;
 
-    public HexCell CellPrefab;
-
     public Color DefaultColor = Color.white;
     public Color PaddingColor = Color.white;
     public Color ModeColor = Color.yellow;
     public Color IntersectionColor = Color.gray;
     public Color SelectedColor = Color.magenta;
-
-    public Text CellLabelPrefab;
 
     public bool UseEvenOffset = false;
     public bool UseFlatHex = false;
@@ -87,16 +84,37 @@ public class HexGridUx
     public HexSection[] Sections;
 }
 
+[System.Serializable]
+public class ProjectileDummy
+{
+    public GameObject Dummy;
+    public PhysHex.Projectile Projectile;
+}
+
+[System.Serializable]
 public class PhysHexUx
 {
     public bool UsePhysHex = false;
+
     public PhysHex.Particle Particle;
     public float ForceMultiplier = 10f;
     public float ClampValue = 500f;
+
+    public bool UseCustomProjectile = false;
+    public string ProjectileType = PhysHex.ProjectileCommonTypeName.Pistol;
+    public PhysHex.ProjectileRepository ProjectileRepository = new PhysHex.ProjectileRepository();
+    public float ProjectileExpirySeconds = 4;
+    public PhysHex.Projectile CustomProjectile = PhysHex.Projectile.Nil;
+
+    public List<ProjectileDummy> Projectiles = new List<ProjectileDummy>();
+    public int MaxProjectiles = 10;
 }
 
 public class HexGrid : MonoBehaviour
 {
+    public HexCell CellPrefab;
+    public Text CellLabelPrefab;
+
     [SerializeField]
     private HexGridUx HexParams = new HexGridUx();
 
@@ -159,8 +177,21 @@ public class HexGrid : MonoBehaviour
 
         _gridCanvasText.Clear();
 
-        HexParams = new HexGridUx();
-        PhysHexParams = new PhysHexUx();
+        if (PhysHexParams != null)
+        {
+            foreach (var p in PhysHexParams.Projectiles)
+            {
+                Destroy(p.Dummy);
+            }
+            PhysHexParams.Projectiles.Clear();
+
+        }
+        else
+        {
+            PhysHexParams = new PhysHexUx();
+        }
+
+        HexParams = HexParams ?? new HexGridUx();
 
         gridCanvas = GetComponentInChildren<Canvas>();
         hexMesh = GetComponentInChildren<HexMesh>();
@@ -235,7 +266,7 @@ public class HexGrid : MonoBehaviour
     private HexCell CreateCellFromHexCoordinate(HexCubeCoordinates coordinates)
     {
         var position = coordinates.ToPosition(_metrics, Orientation, OffsetType);
-        var cell = Instantiate<HexCell>(HexParams.CellPrefab);
+        var cell = Instantiate<HexCell>(CellPrefab);
         cell.transform.SetParent(transform, false);
         cell.transform.localPosition = position;
         cell.Coordinates = coordinates;
@@ -244,7 +275,7 @@ public class HexGrid : MonoBehaviour
 
         if (!HexParams.HideHexLabel)
         {
-            Text label = Instantiate<Text>(HexParams.CellLabelPrefab);
+            Text label = Instantiate<Text>(CellLabelPrefab);
             label.rectTransform.SetParent(gridCanvas.transform, false);
             label.rectTransform.anchoredPosition = new Vector2(position.x, position.z);
             label.text = cell.PaddingCoordinates.ToStringOnSeparateLines();
@@ -414,6 +445,18 @@ public class HexGrid : MonoBehaviour
             }
 
             _dummy.transform.position = PhysHexParams.Particle.Position;
+
+            foreach (var p in PhysHexParams.Projectiles)
+            {
+                if (p.Projectile.Integrate(Time.deltaTime))
+                {
+                    p.Dummy.transform.position = p.Projectile.Particle.Position;
+                }
+                else
+                {
+                    p.Dummy.SetActive(false);
+                }
+            }
         }
         else
         {
@@ -501,7 +544,14 @@ public class HexGrid : MonoBehaviour
         HexParams.CurrentCoordinates = newCell.Coordinates;
         HexParams.CurrentHexCell = newCell;
 
-        ProcessCoordinatesCommand();
+        if (PhysHexParams.UsePhysHex)
+        {
+            ProcessPhysHexCommand();
+        }
+        else
+        {
+            ProcessCoordinatesCommand();
+        }
 
         if (Input.GetKeyDown(KeyCode.R))
         {
@@ -520,6 +570,71 @@ public class HexGrid : MonoBehaviour
         }
 
         UpdateColors();
+    }
+
+    private void ProcessPhysHexCommand()
+    {
+        // Left mouse click.
+        // Shoot a projectile from the source coordinates of the
+        // dummy to the destination coordinates.
+        if (Input.GetMouseButtonDown(0))
+        {
+            var source = HexParams.CurrentCoordinates.ToPosition(_metrics, Orientation, OffsetType);
+            var target = GetMouseCell(HexParams.WrapAroundHexGeometry).Coordinates.ToPosition(_metrics, Orientation, OffsetType);
+
+            ProjectileDummy pd = null;
+
+            if (PhysHexParams.Projectiles.Count == PhysHexParams.MaxProjectiles)
+            {
+                foreach (var p in PhysHexParams.Projectiles)
+                {
+                    if (p.Projectile.Perishable.Expired)
+                    {
+                        pd = p;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                if (PhysHexParams.UseCustomProjectile)
+                {
+                    pd = new ProjectileDummy { Projectile = PhysHexParams.CustomProjectile };
+                }
+                else
+                {
+                    pd = new ProjectileDummy { Projectile = PhysHexParams.ProjectileRepository[PhysHexParams.ProjectileType] };
+                }
+
+                PhysHexParams.Projectiles.Add(pd);
+            }
+
+            if (pd == null)
+            {
+                // There was no space for a new projectile
+                return;
+            }
+            else
+            {
+                pd.Projectile.Particle.Position = source;
+                var direction = source - target;
+                direction.Normalize();
+                pd.Projectile.Particle.Velocity = Vector3.Scale(pd.Projectile.Particle.Velocity, direction);
+
+                // Remove gravity from all for now
+                pd.Projectile.Particle.Acceleration = new PhysHex.AccruedVector3();
+            }
+
+            if (pd.Dummy == null)
+            {
+                pd.Dummy = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                pd.Dummy.GetComponent<MeshRenderer>().material.SetColor("_Color", Color.red);
+                pd.Dummy.transform.rotation = Quaternion.Euler(0f, 270f, 0f);
+            }
+
+            pd.Dummy.SetActive(true);
+            pd.Dummy.transform.position = pd.Projectile.Particle.Position;
+        }
     }
 
     private void ProcessCoordinatesCommand()
@@ -798,7 +913,7 @@ public class HexGrid : MonoBehaviour
                 break;
 
             case HexGridMode.Visible:
-                var visibleMouseCell = GetMouseCell();
+                var visibleMouseCell = GetMouseCell(HexParams.WrapAroundHexGeometry);
                 HexParams.IsMouseVisible = HexParams.CurrentCoordinates.Visible(
                     visibleMouseCell.Coordinates,
                     _metrics,
@@ -824,7 +939,7 @@ public class HexGrid : MonoBehaviour
                 break;
 
             case HexGridMode.FindPath:
-                var pathMouseCell = GetMouseCell();
+                var pathMouseCell = GetMouseCell(HexParams.WrapAroundHexGeometry);
                 foreach (var coords in HexParams.CurrentCoordinates.FindPath(
                     pathMouseCell.Coordinates,
                     WalkableCoordinates))
