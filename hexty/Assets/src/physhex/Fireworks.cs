@@ -75,8 +75,7 @@ public class FireworkPayload
 
     /// <summary>
     /// Determines if after generating a random velocity on a spawned spark constrainted by min/max properties
-    /// the velocity will be transformed into a vector that points in the same direction the spark parent's velocity when fused.
-    /// This allows to simulate a sort of tree effect, where each spark tries to follow the same direction overall.
+    /// the velocity's magnitude is used to transform it into a vector that points in the same direction the spark parent's velocity when fused.
     /// </summary>
     public bool UseParentDirection;
 
