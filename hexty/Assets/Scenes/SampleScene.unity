@@ -609,7 +609,7 @@ MonoBehaviour:
     ClampValue: 500
     UseCustomProjectile: 0
     ProjectileType: PISTOL
-    ProjectileExpirySeconds: 2
+    ProjectileExpirySeconds: 3
     CustomProjectile:
       Particle:
         Position: {x: 0, y: 0, z: 0}

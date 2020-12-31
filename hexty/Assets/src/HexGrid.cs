@@ -89,11 +89,6 @@ public class ProjectileDummy
 {
     public GameObject Dummy;
     public PhysHex.Projectile Projectile;
-    public HexCubeCoordinates Source;
-    public HexCubeCoordinates Target;
-    public Vector3 SourceV;
-    public Vector3 TargetV;
-    public Vector3 Direction;
 }
 
 [System.Serializable]
@@ -589,6 +584,7 @@ public class HexGrid : MonoBehaviour
         if (Input.GetMouseButtonUp(2))
         {
             int index = -1;
+            bool found = false;
 
             if (PhysHexParams.Projectiles.Count == PhysHexParams.MaxProjectiles)
             {
@@ -597,6 +593,7 @@ public class HexGrid : MonoBehaviour
                     ++index;
                     if (p.Projectile.Perishable.Expired)
                     {
+                        found = true;
                         break;
                     }
                 }
@@ -607,26 +604,20 @@ public class HexGrid : MonoBehaviour
                 index = PhysHexParams.Projectiles.Count - 1;
             }
 
-            if (index < 0 || index >= PhysHexParams.Projectiles.Count)
+            if (!found)
             {
                 // There was no space for a new projectile
                 return;
             }
 
             var pd = PhysHexParams.Projectiles[index];
-            pd.Source = HexParams.CurrentCoordinates;
-            pd.SourceV = pd.Source.ToPosition(_metrics, Orientation, OffsetType);
-            pd.Target = GetMouseCell().Coordinates;
-            pd.TargetV = pd.Target.ToPosition(_metrics, Orientation, OffsetType);
-            pd.Direction = pd.TargetV - pd.SourceV;
-            pd.Direction.Normalize();
+            pd.Projectile.Particle.Position = HexParams.CurrentCoordinates.ToPosition(_metrics, Orientation, OffsetType);
             pd.Projectile.Reset(
                 PhysHexParams.ProjectileExpirySeconds,
-                pd.Direction,
+                    GetMouseCell(false).Coordinates.ToPosition(_metrics, Orientation, OffsetType) - pd.Projectile.Particle.Position,
                 PhysHexParams.UseCustomProjectile
                     ? PhysHexParams.CustomProjectile.Particle.Clone()
                     : PhysHexParams.ProjectileRepository[PhysHexParams.ProjectileType].Particle.Clone());
-            pd.Projectile.Particle.Position = pd.Source.ToPosition(_metrics, Orientation, OffsetType);
 
             // Remove gravity from all for now
             pd.Projectile.Particle.Acceleration = new PhysHex.AccruedVector3();
