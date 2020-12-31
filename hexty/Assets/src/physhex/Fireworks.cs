@@ -20,59 +20,68 @@ public class FireworkPayload
     public int FuseCount { get; private set; }
 }
 
+public class FireworkSpark
+{
+    public Projectile Projectile;
+    public int CurrentPayload;
+}
+
 public class Firework
 {
-    public List<Projectile> Projectiles { get; private set; }
-    public Queue<FireworkPayload> Payload { get; private set; }
+    public List<FireworkSpark> Sparks { get; private set; }
+    public List<FireworkPayload> Payload { get; private set; }
 
-    public Firework(Queue<FireworkPayload> payload, Vector3 direction, Particle particle)
+    public Firework(List<FireworkPayload> payload, Vector3 direction, Particle particle)
     {
-        Payload = payload ?? new Queue<FireworkPayload>();
-        Projectiles = new List<Projectile>();
-        Projectiles.Add(new Projectile(0, direction, particle));
-        StepPayload();
+        Payload = payload ?? new List<FireworkPayload>();
+        Sparks = new List<FireworkSpark>();
+        Sparks.Add(new FireworkSpark {
+            Projectile = new Projectile(0, direction, particle),
+            CurrentPayload = 0
+        });
+        StepPayload(0);
     }
 
-    private bool StepPayload()
+    private bool StepPayload(int index)
     {
-        var newList = new List<Projectile>();
-
-        if (Payload.Count > 0)
+        if (index < Sparks.Count && Sparks[index].CurrentPayload < Payload.Count)
         {
-            var payload = Payload.Dequeue();
-
-            foreach (var p in Projectiles)
+            var payload = Payload[Sparks[index].CurrentPayload];
+            for (var i = 0; i < payload.FuseCount; ++i)
             {
-                for (var i = 0; i < payload.FuseCount; ++i)
-                {
-                    var particle = p.Particle.Clone();
-                    particle.Velocity = new Vector3(
-                        Random.Range(payload.MinVelocity.x, payload.MaxVelocity.x),
-                        Random.Range(payload.MinVelocity.y, payload.MaxVelocity.y),
-                        Random.Range(payload.MinVelocity.z, payload.MaxVelocity.z));
-                    particle.Damping = payload.Damping;
-                    newList.Add(new Projectile(Random.Range(payload.MinExpiry, payload.MaxExpiry), Vector3.one, particle));
-                }
+                var particle = Sparks[index].Projectile.Particle.Clone();
+                particle.Velocity = new Vector3(
+                    Random.Range(payload.MinVelocity.x, payload.MaxVelocity.x),
+                    Random.Range(payload.MinVelocity.y, payload.MaxVelocity.y),
+                    Random.Range(payload.MinVelocity.z, payload.MaxVelocity.z));
+                particle.Damping = payload.Damping;
+                Sparks.Add(new FireworkSpark{
+                    Projectile = new Projectile(Random.Range(payload.MinExpiry, payload.MaxExpiry), Vector3.one, particle),
+                    CurrentPayload = Sparks[index].CurrentPayload + 1,
+                });
             }
+            Sparks.RemoveAt(index);
         }
-
-        Projectiles = newList;
-        return Projectiles.Count > 0;
+        return Sparks.Count > 0;
     }
 
     public bool Integrate(float duration)
     {
-        bool anyIntegrated = false;
-
-        foreach (var p in Projectiles)
+        var expiredIndexes = new List<int>();
+        int index = -1;
+        foreach (var s in Sparks)
         {
-            if (p.Integrate(duration))
+            ++index;
+            if (!s.Projectile.Particle.Integrate(duration))
             {
-                anyIntegrated = true;
+                expiredIndexes.Add(index);
             }
         }
-
-        return !anyIntegrated && StepPayload() || anyIntegrated;
+        foreach (var i in expiredIndexes)
+        {
+            StepPayload(i);
+        }
+        return Sparks.Count > 0;
     }
 }
 
