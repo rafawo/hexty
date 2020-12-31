@@ -444,6 +444,7 @@ public class HexGrid : MonoBehaviour
                 PhysHexParams.Particle.Velocity = Vector3.zero;
             }
 
+            PhysHexParams.Particle.Position = hexWrapAround.TransformPosition(PhysHexParams.Particle.Position, _metrics);
             _dummy.transform.position = PhysHexParams.Particle.Position;
 
             foreach (var p in PhysHexParams.Projectiles)
@@ -486,9 +487,9 @@ public class HexGrid : MonoBehaviour
 
             force.y = _dummy.transform.position.y;
             _dummy.transform.position += force * _cameraMovement.Step;
+            _dummy.transform.position = hexWrapAround.TransformPosition(_dummy.transform.position, _metrics);
         }
 
-        _dummy.transform.position = hexWrapAround.TransformPosition(_dummy.transform.position, _metrics);
         _dummy.transform.Rotate(
             0,
             Input.GetKey(KeyCode.J)
@@ -617,7 +618,7 @@ public class HexGrid : MonoBehaviour
             else
             {
                 pd.Projectile.Particle.Position = source;
-                var direction = source - target;
+                var direction = target - source;
                 direction.Normalize();
                 pd.Projectile.Particle.Velocity = Vector3.Scale(pd.Projectile.Particle.Velocity, direction);
 
