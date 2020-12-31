@@ -268,7 +268,7 @@ public class HexGrid : MonoBehaviour
 
     private HexCell CreateCellFromHexCoordinate(HexCubeCoordinates coordinates)
     {
-        var position = coordinates.ToPosition(_metrics, Orientation, OffsetType);
+        var position = GetCellPosition(coordinates);
         var cell = Instantiate<HexCell>(CellPrefab);
         cell.transform.SetParent(transform, false);
         cell.transform.localPosition = position;
@@ -300,6 +300,9 @@ public class HexGrid : MonoBehaviour
         => hashedCells.ContainsKey(coordinates)
             ? hashedCells[coordinates]
             : null;
+
+    public Vector3 GetCellPosition(HexCubeCoordinates coordinates)
+        => coordinates.ToPosition(_metrics, Orientation, OffsetType);
 
     public void ColorCell(Vector3 position, Color color, bool wrapAround = false)
         => ColorCell(GetCell(position), color, wrapAround);
@@ -623,10 +626,10 @@ public class HexGrid : MonoBehaviour
             }
 
             var pd = PhysHexParams.Projectiles[index];
-            pd.Projectile.Particle.Position = HexParams.CurrentCoordinates.ToPosition(_metrics, Orientation, OffsetType);
+            pd.Projectile.Particle.Position = GetCellPosition(HexParams.CurrentCoordinates);
             pd.Projectile.Reset(
                 PhysHexParams.ProjectileExpirySeconds,
-                    GetMouseCell(false).Coordinates.ToPosition(_metrics, Orientation, OffsetType) - pd.Projectile.Particle.Position,
+                    GetCellPosition(GetMouseCell(false).Coordinates) - pd.Projectile.Particle.Position,
                 PhysHexParams.UseCustomProjectile
                     ? PhysHexParams.CustomProjectile.Particle.Clone()
                     : PhysHexParams.ProjectileRepository[PhysHexParams.ProjectileType].Particle.Clone());
