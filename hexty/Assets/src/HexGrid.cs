@@ -107,6 +107,31 @@ public class PhysHexUx
 
     public List<ProjectileDummy> Projectiles = new List<ProjectileDummy>();
     public int MaxProjectiles = 2;
+
+    public bool UseFireworks = false;
+    public PhysHex.Firework Firework = null;
+    public List<GameObject> FireworkSparkPool = new List<GameObject>();
+    public int FireworkSparkPoolLimit = 50;
+    public List<PhysHex.FireworkPayload> FireworkPayloads = new List<PhysHex.FireworkPayload>() {
+        new PhysHex.FireworkPayload {
+            MinExpiry = 3f,
+            MaxExpiry = 3f,
+            MinVelocity = new Vector3(0f, 0f, 5f),
+            MaxVelocity = new Vector3(0f, 0f, 5f),
+            Damping = 0.5f,
+            FuseCount = 1,
+            AggregateParentVelocity = false,
+        },
+        new PhysHex.FireworkPayload {
+            MinExpiry = 1f,
+            MaxExpiry = 4f,
+            MinVelocity = new Vector3(-5f, 0f, -5f),
+            MaxVelocity = new Vector3(5f, 0f, 5f),
+            Damping = 0.05f,
+            FuseCount = 5,
+            AggregateParentVelocity = true,
+        },
+    };
 }
 
 public class HexGrid : MonoBehaviour
@@ -238,8 +263,7 @@ public class HexGrid : MonoBehaviour
         // Create a dummy sphere that will be used to get hooked up to the camera.
         // Start its position at origin and with a rotation of 270 degrees, so that
         // when the camera is hooked it starts looking towards negative Z (0, 0, -1)
-        _dummy = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        _dummy.transform.rotation = Quaternion.Euler(0f, 270f, 0f);
+        _dummy = CreateDummy(Color.black);
         _cameraMovement = Camera.main.GetComponent<CameraMovementController>();
         _cameraMovement.ResetCamera();
         _cameraMovement.Hook(_dummy);
@@ -286,6 +310,14 @@ public class HexGrid : MonoBehaviour
         }
 
         return cell;
+    }
+
+    private GameObject CreateDummy(Color color)
+    {
+        var dummy = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        dummy.GetComponent<MeshRenderer>().material.SetColor("_Color", color);
+        dummy.transform.rotation = Quaternion.Euler(0f, 270f, 0f);
+        return dummy;
     }
 
     public HexCell GetCell(Vector3 position, bool wrapAround = true)
@@ -580,6 +612,53 @@ public class HexGrid : MonoBehaviour
             }
         }
 
+        if (PhysHexParams.Firework != null)
+        {
+            if (!PhysHexParams.Firework.Integrate(Time.deltaTime))
+            {
+                PhysHexParams.Firework = null;
+                foreach (var s in PhysHexParams.FireworkSparkPool)
+                {
+                    s.SetActive(false);
+                }
+            }
+            else
+            {
+                // TODO: Finish implementing this logic
+
+                GameObject spark = null;
+                if (PhysHexParams.FireworkSparkPool.Count < PhysHexParams.FireworkSparkPoolLimit)
+                {
+                    spark = CreateDummy(Color.red);
+                    PhysHexParams.FireworkSparkPool.Add(spark);
+                }
+                else
+                {
+                    int index = -1;
+                    bool found = false;
+                    foreach (var s in PhysHexParams.FireworkSparkPool)
+                    {
+                        ++index;
+                        if (!s.activeSelf)
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (found)
+                    {
+                        spark = PhysHexParams.FireworkSparkPool[index];
+                    }
+                }
+
+                if (spark != null)
+                {
+
+                }
+            }
+        }
+
         if (Input.GetKeyUp(KeyCode.P))
         {
             PhysHexParams.ProjectileType = PhysHexParams.ProjectileType == PhysHex.ProjectileCommonTypeName.Pistol
@@ -591,10 +670,17 @@ public class HexGrid : MonoBehaviour
                         : PhysHex.ProjectileCommonTypeName.Pistol;
         }
 
+        if (Input.GetKeyUp(KeyCode.F))
+        {
+            PhysHexParams.UseFireworks = !PhysHexParams.UseFireworks;
+        }
+
+        var shooting = Input.GetMouseButtonUp(2);
+
         // Middle mouse click.
         // Shoot a projectile from the source coordinates of the
         // dummy to the destination coordinates.
-        if (Input.GetMouseButtonUp(2))
+        if (shooting && !PhysHexParams.UseFireworks)
         {
             int index = -1;
             bool freeSpace = false;
@@ -638,13 +724,18 @@ public class HexGrid : MonoBehaviour
 
             if (pd.Dummy == null)
             {
-                pd.Dummy = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                pd.Dummy.GetComponent<MeshRenderer>().material.SetColor("_Color", Color.red);
-                pd.Dummy.transform.rotation = Quaternion.Euler(0f, 270f, 0f);
+                pd.Dummy = CreateDummy(Color.red);
             }
 
             pd.Dummy.SetActive(true);
             pd.Dummy.transform.position = pd.Projectile.Particle.Position;
+        }
+        else if (shooting && PhysHexParams.UseFireworks && PhysHexParams.Firework == null)
+        {
+            PhysHexParams.Firework = new PhysHex.Firework(PhysHexParams.FireworkPayloads, new PhysHex.Particle {
+                Position = _dummy.transform.position,
+                Mass = 1f,
+            });
         }
     }
 

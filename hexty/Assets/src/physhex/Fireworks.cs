@@ -10,56 +10,72 @@ using UnityEngine;
 namespace PhysHex
 {
 
-public class FireworkPayload
-{
-    public float MinExpiry { get; private set; }
-    public float MaxExpiry { get; private set; }
-    public Vector3 MinVelocity { get; private set; }
-    public Vector3 MaxVelocity { get; private set; }
-    public float Damping { get; private set; }
-    public int FuseCount { get; private set; }
-}
-
+[System.Serializable]
 public class FireworkSpark
 {
     public Projectile Projectile;
     public int CurrentPayload;
 }
 
+[System.Serializable]
+public class FireworkPayload
+{
+    public float MinExpiry;
+    public float MaxExpiry;
+    public Vector3 MinVelocity;
+    public Vector3 MaxVelocity;
+    public float Damping;
+    public int FuseCount;
+    public bool AggregateParentVelocity;
+
+    public float RandomExpiry { get => Random.Range(MinExpiry, MaxExpiry); }
+    public Vector3 RandomVelocity { get => new Vector3(Random.Range(MinVelocity.x, MaxVelocity.x), Random.Range(MinVelocity.y, MaxVelocity.y), Random.Range(MinVelocity.z, MaxVelocity.z)); }
+
+    public List<FireworkSpark> Fuse(Particle parent, int payload)
+    {
+        var sparks = new List<FireworkSpark>();
+        for (int i = 0; i < FuseCount; ++i)
+        {
+            var particle = parent.Clone();
+            particle.Velocity = RandomVelocity;
+            particle.Velocity += AggregateParentVelocity ? parent.Velocity : Vector3.zero;
+            particle.Damping = Damping;
+            var spark = new FireworkSpark {
+                Projectile = new Projectile(RandomExpiry, particle.Velocity.normalized, particle),
+                CurrentPayload = payload
+            };
+            spark.Projectile.Particle.Damping = Damping;
+            sparks.Add(spark);
+        }
+        return sparks;
+    }
+}
+
+[System.Serializable]
 public class Firework
 {
-    public List<FireworkSpark> Sparks { get; private set; }
-    public List<FireworkPayload> Payload { get; private set; }
+    public List<FireworkSpark> Sparks;
+    public readonly List<FireworkPayload> Payloads;
 
-    public Firework(List<FireworkPayload> payload, Vector3 direction, Particle particle)
+    public Firework(List<FireworkPayload> payloads, Particle particle)
     {
-        Payload = payload ?? new List<FireworkPayload>();
+        if (payloads.Count < 1)
+        {
+            throw new System.ArgumentException("Firework payload must have at least one entry");
+        }
+
+        Payloads = payloads;
         Sparks = new List<FireworkSpark>();
-        Sparks.Add(new FireworkSpark {
-            Projectile = new Projectile(0, direction, particle),
-            CurrentPayload = 0
-        });
+        Sparks.Add(new FireworkSpark { Projectile = new Projectile(0, Vector3.one, particle), CurrentPayload = 0 });
         StepPayload(0);
     }
 
     private bool StepPayload(int index)
     {
-        if (index < Sparks.Count && Sparks[index].CurrentPayload < Payload.Count)
+        var spark = Sparks[index];
+        if (index < Sparks.Count && spark.CurrentPayload < Payloads.Count)
         {
-            var payload = Payload[Sparks[index].CurrentPayload];
-            for (var i = 0; i < payload.FuseCount; ++i)
-            {
-                var particle = Sparks[index].Projectile.Particle.Clone();
-                particle.Velocity = new Vector3(
-                    Random.Range(payload.MinVelocity.x, payload.MaxVelocity.x),
-                    Random.Range(payload.MinVelocity.y, payload.MaxVelocity.y),
-                    Random.Range(payload.MinVelocity.z, payload.MaxVelocity.z));
-                particle.Damping = payload.Damping;
-                Sparks.Add(new FireworkSpark{
-                    Projectile = new Projectile(Random.Range(payload.MinExpiry, payload.MaxExpiry), Vector3.one, particle),
-                    CurrentPayload = Sparks[index].CurrentPayload + 1,
-                });
-            }
+            Sparks.AddRange(Payloads[spark.CurrentPayload].Fuse(spark.Projectile.Particle, spark.CurrentPayload + 1));
             Sparks.RemoveAt(index);
         }
         return Sparks.Count > 0;
