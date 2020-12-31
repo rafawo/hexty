@@ -59,7 +59,7 @@ public class Firework
     public List<FireworkSpark> Sparks = new List<FireworkSpark>();
     public readonly List<FireworkPayload> Payloads;
 
-    public Firework(List<FireworkPayload> payloads, Particle particle)
+    public Firework(List<FireworkPayload> payloads, Projectile projectile)
     {
         if (payloads.Count < 1)
         {
@@ -67,8 +67,7 @@ public class Firework
         }
 
         Payloads = payloads;
-        var proxy = new FireworkSpark { Projectile = new Projectile(0, Vector3.one, particle), CurrentPayload = 0 };
-        Sparks = Payloads[0].Fuse(proxy.Projectile.Particle, 1);
+        Sparks = new List<FireworkSpark>() { new FireworkSpark { Projectile = projectile, CurrentPayload = 0 } };
     }
 
     private bool StepPayload(int index)

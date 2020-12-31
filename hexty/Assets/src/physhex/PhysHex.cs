@@ -52,7 +52,7 @@ public class Perishable
     /// Computes whether the perishable has expired.
     /// </summary>
     /// <returns></returns>
-    public bool Expired { get => (Expiry > 0 && Epoch > Expiry) || (StopPredicate != null && StopPredicate(Context)); }
+    public bool Expired { get => (Epoch > Expiry) || (StopPredicate != null && StopPredicate(Context)); }
 
     /// <summary>
     /// Integrates the perishable object by increasing the epoch with the supplied duration value

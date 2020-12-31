@@ -722,11 +722,15 @@ public class HexGrid : MonoBehaviour
         }
         else if (shooting && PhysHexParams.UseFireworks && PhysHexParams.Firework == null)
         {
-            PhysHexParams.Firework = new PhysHex.Firework(PhysHexParams.FireworkPayloads, new PhysHex.Particle {
-                Position = _dummy.transform.position,
-                Mass = 1f,
-                Velocity = (GetCellPosition(GetMouseCell(false).Coordinates) - _dummy.transform.position).normalized,
-            });
+            PhysHexParams.Firework = new PhysHex.Firework(
+                PhysHexParams.FireworkPayloads,
+                new PhysHex.Projectile(
+                    0,
+                    GetCellPosition(GetMouseCell(false).Coordinates) - _dummy.transform.position,
+                    new PhysHex.Particle {
+                        Mass = 1,
+                        Velocity = Vector3.one,
+                    }));
         }
     }
 
