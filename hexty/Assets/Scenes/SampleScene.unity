@@ -638,7 +638,7 @@ MonoBehaviour:
       MaxExpiry: 3
       MinVelocity: {x: 0, y: 0, z: 5}
       MaxVelocity: {x: 0, y: 0, z: 5}
-      Damping: 0.5
+      Damping: 0.1
       FuseCount: 1
       AggregateParentVelocity: 0
       UseParentDirection: 1
@@ -646,7 +646,7 @@ MonoBehaviour:
       MaxExpiry: 4
       MinVelocity: {x: -5, y: 0, z: -5}
       MaxVelocity: {x: 5, y: 0, z: 5}
-      Damping: 0.05
+      Damping: 0.2
       FuseCount: 5
       AggregateParentVelocity: 1
       UseParentDirection: 0

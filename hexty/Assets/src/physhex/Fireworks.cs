@@ -40,7 +40,7 @@ public class FireworkPayload
             var particle = parent.Clone();
             particle.Velocity = RandomVelocity;
             particle.Velocity += AggregateParentVelocity ? parent.Velocity : Vector3.zero;
-            particle.Velocity *= UseParentDirection ? parent.Velocity.magnitude : 1;
+            particle.Velocity = UseParentDirection ? parent.Velocity.normalized * particle.Velocity.magnitude : particle.Velocity;
             particle.Damping = Damping;
             var spark = new FireworkSpark {
                 Projectile = new Projectile(RandomExpiry, particle.Velocity.normalized, particle),
@@ -67,9 +67,8 @@ public class Firework
         }
 
         Payloads = payloads;
-        Sparks = new List<FireworkSpark>();
-        Sparks.Add(new FireworkSpark { Projectile = new Projectile(0, Vector3.one, particle), CurrentPayload = 0 });
-        StepPayload(0);
+        var proxy = new FireworkSpark { Projectile = new Projectile(0, Vector3.one, particle), CurrentPayload = 0 };
+        Sparks = Payloads[0].Fuse(proxy.Projectile.Particle, 0);
     }
 
     private bool StepPayload(int index)
@@ -79,8 +78,9 @@ public class Firework
         {
             Sparks.AddRange(Payloads[spark.CurrentPayload].Fuse(spark.Projectile.Particle, spark.CurrentPayload + 1));
             Sparks.RemoveAt(index);
+            return true;
         }
-        return Sparks.Count > 0;
+        return false;
     }
 
     public bool Integrate(float duration)
@@ -88,19 +88,25 @@ public class Firework
         if (Sparks == null) return false;
         var expiredIndexes = new List<int>();
         int index = -1;
+        bool anyIntegrated = false;
         foreach (var s in Sparks)
         {
             ++index;
-            if (!s.Projectile.Particle.Integrate(duration))
+            if (!s.Projectile.Integrate(duration))
             {
                 expiredIndexes.Add(index);
             }
+            else
+            {
+                anyIntegrated = true;
+            }
         }
+        bool anyFused = false;
         foreach (var i in expiredIndexes)
         {
-            StepPayload(i);
+            anyFused |= StepPayload(i);
         }
-        return Sparks.Count > 0;
+        return anyIntegrated || anyFused;
     }
 }
 

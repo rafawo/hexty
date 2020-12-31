@@ -118,7 +118,7 @@ public class PhysHexUx
             MaxExpiry = 3f,
             MinVelocity = new Vector3(0f, 0f, 5f),
             MaxVelocity = new Vector3(0f, 0f, 5f),
-            Damping = 0.5f,
+            Damping = 0.1f,
             FuseCount = 1,
             AggregateParentVelocity = false,
             UseParentDirection = true,
@@ -128,7 +128,7 @@ public class PhysHexUx
             MaxExpiry = 4f,
             MinVelocity = new Vector3(-5f, 0f, -5f),
             MaxVelocity = new Vector3(5f, 0f, 5f),
-            Damping = 0.05f,
+            Damping = 0.2f,
             FuseCount = 5,
             AggregateParentVelocity = true,
             UseParentDirection = false,
@@ -616,41 +616,36 @@ public class HexGrid : MonoBehaviour
 
         if (PhysHexParams.Firework != null)
         {
+            int index = 0;
             if (!PhysHexParams.Firework.Integrate(Time.deltaTime))
             {
                 PhysHexParams.Firework = null;
-                foreach (var s in PhysHexParams.FireworkSparkPool)
-                {
-                    s.SetActive(false);
-                }
             }
             else
             {
                 foreach (var s in PhysHexParams.Firework.Sparks)
                 {
-                    if (!s.Projectile.Perishable.Expired)
+                    if (s.Projectile.Perishable.Expired)
                     {
-                        if (PhysHexParams.FireworkSparkPool.Count < PhysHexParams.FireworkSparkPoolLimit)
-                        {
-                            var spark = CreateDummy(Color.red);
-                            spark.transform.position = s.Projectile.Particle.Position;
-                            PhysHexParams.FireworkSparkPool.Add(spark);
-                            continue;
-                        }
-                        else
-                        {
-                            foreach (var spark in PhysHexParams.FireworkSparkPool)
-                            {
-                                if (!spark.activeSelf)
-                                {
-                                    spark.transform.position = s.Projectile.Particle.Position;
-                                    spark.SetActive(true);
-                                    break;
-                                }
-                            }
-                        }
+                        continue;
                     }
+
+                    if (index > PhysHexParams.FireworkSparkPool.Count - 1 &&
+                        PhysHexParams.FireworkSparkPool.Count < PhysHexParams.FireworkSparkPoolLimit)
+                    {
+                        PhysHexParams.FireworkSparkPool.Add(CreateDummy(Color.red));
+                    }
+
+                    PhysHexParams.FireworkSparkPool[index].transform.position = s.Projectile.Particle.Position;
+                    PhysHexParams.FireworkSparkPool[index].SetActive(true);
+
+                    ++index;
                 }
+            }
+
+            for (;index < PhysHexParams.FireworkSparkPool.Count; ++index)
+            {
+                PhysHexParams.FireworkSparkPool[index].SetActive(false);
             }
         }
 
