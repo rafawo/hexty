@@ -89,6 +89,11 @@ public class ProjectileDummy
 {
     public GameObject Dummy;
     public PhysHex.Projectile Projectile;
+    public HexCubeCoordinates Source;
+    public HexCubeCoordinates Target;
+    public Vector3 SourceV;
+    public Vector3 TargetV;
+    public Vector3 Direction;
 }
 
 [System.Serializable]
@@ -583,9 +588,6 @@ public class HexGrid : MonoBehaviour
         // dummy to the destination coordinates.
         if (Input.GetMouseButtonUp(2))
         {
-            var source = HexParams.CurrentCoordinates.ToPosition(_metrics, Orientation, OffsetType);
-            var target = GetMouseCell().Coordinates.ToPosition(_metrics, Orientation, OffsetType);
-
             int index = -1;
 
             if (PhysHexParams.Projectiles.Count == PhysHexParams.MaxProjectiles)
@@ -612,16 +614,19 @@ public class HexGrid : MonoBehaviour
             }
 
             var pd = PhysHexParams.Projectiles[index];
+            pd.Source = HexParams.CurrentCoordinates;
+            pd.SourceV = pd.Source.ToPosition(_metrics, Orientation, OffsetType);
+            pd.Target = GetMouseCell().Coordinates;
+            pd.TargetV = pd.Target.ToPosition(_metrics, Orientation, OffsetType);
+            pd.Direction = pd.TargetV - pd.SourceV;
+            pd.Direction.Normalize();
             pd.Projectile.Reset(
                 PhysHexParams.ProjectileExpirySeconds,
+                pd.Direction,
                 PhysHexParams.UseCustomProjectile
                     ? PhysHexParams.CustomProjectile.Particle.Clone()
                     : PhysHexParams.ProjectileRepository[PhysHexParams.ProjectileType].Particle.Clone());
-
-            pd.Projectile.Particle.Position = source;
-            var direction = target - source;
-            direction.Normalize();
-            pd.Projectile.Particle.Velocity = Vector3.Scale(pd.Projectile.Particle.Velocity, direction);
+            pd.Projectile.Particle.Position = pd.Source.ToPosition(_metrics, Orientation, OffsetType);
 
             // Remove gravity from all for now
             pd.Projectile.Particle.Acceleration = new PhysHex.AccruedVector3();

@@ -39,10 +39,11 @@ public class Projectile
     /// the projectile starts with (mass, velocity, acceleration, damping).
     /// </summary>
     /// <param name="expiry">Expiration threshold value.</param>
+    /// <param name="direction">Vector3 value that supplies the movement direction of the particle.</param>
     /// <param name="particle">Physhex unit of simulation starting point.</param>
-    public Projectile(float expiry, Particle particle)
+    public Projectile(float expiry, Vector3 direction, Particle particle)
     {
-        Reset(expiry, particle);
+        Reset(expiry, direction, particle);
     }
 
     /// <summary>
@@ -51,8 +52,9 @@ public class Projectile
     /// the projectile starts with (mass, velocity, acceleration, damping).
     /// </summary>
     /// <param name="expiry">Expiration threshold value.</param>
+    /// <param name="direction">Vector3 value that supplies the movement direction of the particle.</param>
     /// <param name="particle">Physhex unit of simulation starting point.</param>
-    public void Reset(float expiry, Particle particle)
+    public void Reset(float expiry, Vector3 direction, Particle particle)
     {
         Perishable = new Perishable {
             Epoch = 0,
@@ -60,6 +62,7 @@ public class Projectile
             Context = particle,
         };
         Particle = particle;
+        Particle.Velocity = direction.normalized * Particle.Velocity.magnitude;
     }
 
     /// <summary>
@@ -79,7 +82,7 @@ public class Projectile
     /// However, the physhex simulation wouldn't do anything with
     /// this projectile.
     /// </summary>
-    public static Projectile Nil { get => new Projectile(-1f, new Particle()); }
+    public static Projectile Nil { get => new Projectile(-1f, Vector3.one, new Particle()); }
 
     private Projectile() { }
 
@@ -111,10 +114,12 @@ public static class ProjectileCommonTypeName
 /// All instances of this class access the same underlying global
 /// repository map. This means that it's a pseudo-singleton.
 ///
-/// NOTE: The velocity and acceleration in the projectiles
-/// is assuming a movement in the x-z plane, with no movement in the y axis.
-/// Manual tinkering of the vectors is necessary to represent movement
-/// on a different way.
+/// This repository always gets/sets clones of the projectile object
+/// to avoid accidental modifications of the original object
+/// and effectively treat them as templates.
+///
+/// NOTE: The velocity and acceleration vectors represent movement
+/// on each axis, and its magnitude the total m/s.
 /// </summary>
 public class ProjectileRepository
 {
@@ -134,11 +139,11 @@ public class ProjectileRepository
             {
                 if (gm_Projectiles.ContainsKey(name))
                 {
-                    gm_Projectiles[name] = value;
+                    gm_Projectiles[name] = value.Clone();
                 }
                 else
                 {
-                    gm_Projectiles.Add(name, value);
+                    gm_Projectiles.Add(name, value.Clone());
                 }
             }
         }
@@ -152,6 +157,7 @@ public class ProjectileRepository
             ProjectileCommonTypeName.Pistol,
             new Projectile(
                 float.MaxValue,
+                Vector3.one,
                 new Particle {
                     Mass = 2f, // 2 kg
                     Velocity = new Vector3(0f, 0f, 35f), // 35 m/s
@@ -164,6 +170,7 @@ public class ProjectileRepository
             ProjectileCommonTypeName.Artillery,
             new Projectile(
                 float.MaxValue,
+                Vector3.one,
                 new Particle {
                     Mass = 200f, // 200 kg
                     Velocity = new Vector3(0f, 30f, 40f), // 50 m/s
@@ -176,6 +183,7 @@ public class ProjectileRepository
             ProjectileCommonTypeName.Fireball,
             new Projectile(
                 float.MaxValue,
+                Vector3.one,
                 new Particle {
                     Mass = 1f, // 1 kg - Mostly blast damage
                     Velocity = new Vector3(0f, 0f, 10f), // 5 m/s
@@ -188,9 +196,10 @@ public class ProjectileRepository
             ProjectileCommonTypeName.Laser,
             new Projectile(
                 float.MaxValue,
+                Vector3.one,
                 new Particle {
                     Mass = 0.1f, // 0.1 k - Almost no weight
-                    Velocity = new Vector3(0f, 0f, 10f), // 100 m/s
+                    Velocity = new Vector3(0f, 0f, 100f), // 100 m/s
                     Acceleration = new AccruedVector3(new Vector3(0f, 0f, 0f)), // No gravity
                     Damping = 0.9f,
                 }
