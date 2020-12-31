@@ -68,7 +68,7 @@ public class Firework
 
         Payloads = payloads;
         var proxy = new FireworkSpark { Projectile = new Projectile(0, Vector3.one, particle), CurrentPayload = 0 };
-        Sparks = Payloads[0].Fuse(proxy.Projectile.Particle, 0);
+        Sparks = Payloads[0].Fuse(proxy.Projectile.Particle, 1);
     }
 
     private bool StepPayload(int index)
