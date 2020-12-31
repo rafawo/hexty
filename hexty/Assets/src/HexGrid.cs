@@ -584,7 +584,7 @@ public class HexGrid : MonoBehaviour
         if (Input.GetMouseButtonUp(2))
         {
             int index = -1;
-            bool found = false;
+            bool freeSpace = false;
 
             if (PhysHexParams.Projectiles.Count == PhysHexParams.MaxProjectiles)
             {
@@ -593,7 +593,7 @@ public class HexGrid : MonoBehaviour
                     ++index;
                     if (p.Projectile.Perishable.Expired)
                     {
-                        found = true;
+                        freeSpace = true;
                         break;
                     }
                 }
@@ -602,9 +602,10 @@ public class HexGrid : MonoBehaviour
             {
                 PhysHexParams.Projectiles.Add(new ProjectileDummy { Projectile = PhysHex.Projectile.Nil });
                 index = PhysHexParams.Projectiles.Count - 1;
+                freeSpace = true;
             }
 
-            if (!found)
+            if (!freeSpace && PhysHexParams.Projectiles.Count == PhysHexParams.MaxProjectiles)
             {
                 // There was no space for a new projectile
                 return;
