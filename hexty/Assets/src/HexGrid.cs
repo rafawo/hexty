@@ -578,6 +578,17 @@ public class HexGrid : MonoBehaviour
             }
         }
 
+        if (Input.GetKeyUp(KeyCode.P))
+        {
+            PhysHexParams.ProjectileType = PhysHexParams.ProjectileType == PhysHex.ProjectileCommonTypeName.Pistol
+                ? PhysHex.ProjectileCommonTypeName.Artillery
+                : PhysHexParams.ProjectileType == PhysHex.ProjectileCommonTypeName.Artillery
+                    ? PhysHex.ProjectileCommonTypeName.Fireball
+                    : PhysHexParams.ProjectileType == PhysHex.ProjectileCommonTypeName.Fireball
+                        ? PhysHex.ProjectileCommonTypeName.Laser
+                        : PhysHex.ProjectileCommonTypeName.Pistol;
+        }
+
         // Middle mouse click.
         // Shoot a projectile from the source coordinates of the
         // dummy to the destination coordinates.
