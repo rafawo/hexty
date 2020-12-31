@@ -628,6 +628,28 @@ MonoBehaviour:
         Expiry: -1
     Projectiles: []
     MaxProjectiles: 3
+    UseFireworks: 0
+    Firework:
+      Sparks: []
+    FireworkSparkPool: []
+    FireworkSparkPoolLimit: 10
+    FireworkPayloads:
+    - MinExpiry: 3
+      MaxExpiry: 3
+      MinVelocity: {x: 0, y: 0, z: 5}
+      MaxVelocity: {x: 0, y: 0, z: 5}
+      Damping: 0.5
+      FuseCount: 1
+      AggregateParentVelocity: 0
+      UseParentDirection: 1
+    - MinExpiry: 1
+      MaxExpiry: 4
+      MinVelocity: {x: -5, y: 0, z: -5}
+      MaxVelocity: {x: 5, y: 0, z: 5}
+      Damping: 0.05
+      FuseCount: 5
+      AggregateParentVelocity: 1
+      UseParentDirection: 0
 --- !u!4 &952995617
 Transform:
   m_ObjectHideFlags: 0

@@ -121,6 +121,7 @@ public class PhysHexUx
             Damping = 0.5f,
             FuseCount = 1,
             AggregateParentVelocity = false,
+            UseParentDirection = true,
         },
         new PhysHex.FireworkPayload {
             MinExpiry = 1f,
@@ -130,6 +131,7 @@ public class PhysHexUx
             Damping = 0.05f,
             FuseCount = 5,
             AggregateParentVelocity = true,
+            UseParentDirection = false,
         },
     };
 }
@@ -624,37 +626,30 @@ public class HexGrid : MonoBehaviour
             }
             else
             {
-                // TODO: Finish implementing this logic
-
-                GameObject spark = null;
-                if (PhysHexParams.FireworkSparkPool.Count < PhysHexParams.FireworkSparkPoolLimit)
+                foreach (var s in PhysHexParams.Firework.Sparks)
                 {
-                    spark = CreateDummy(Color.red);
-                    PhysHexParams.FireworkSparkPool.Add(spark);
-                }
-                else
-                {
-                    int index = -1;
-                    bool found = false;
-                    foreach (var s in PhysHexParams.FireworkSparkPool)
+                    if (!s.Projectile.Perishable.Expired)
                     {
-                        ++index;
-                        if (!s.activeSelf)
+                        if (PhysHexParams.FireworkSparkPool.Count < PhysHexParams.FireworkSparkPoolLimit)
                         {
-                            found = true;
-                            break;
+                            var spark = CreateDummy(Color.red);
+                            spark.transform.position = s.Projectile.Particle.Position;
+                            PhysHexParams.FireworkSparkPool.Add(spark);
+                            continue;
+                        }
+                        else
+                        {
+                            foreach (var spark in PhysHexParams.FireworkSparkPool)
+                            {
+                                if (!spark.activeSelf)
+                                {
+                                    spark.transform.position = s.Projectile.Particle.Position;
+                                    spark.SetActive(true);
+                                    break;
+                                }
+                            }
                         }
                     }
-
-                    if (found)
-                    {
-                        spark = PhysHexParams.FireworkSparkPool[index];
-                    }
-                }
-
-                if (spark != null)
-                {
-
                 }
             }
         }
@@ -711,13 +706,13 @@ public class HexGrid : MonoBehaviour
             }
 
             var pd = PhysHexParams.Projectiles[index];
-            pd.Projectile.Particle.Position = GetCellPosition(HexParams.CurrentCoordinates);
             pd.Projectile.Reset(
                 PhysHexParams.ProjectileExpirySeconds,
-                    GetCellPosition(GetMouseCell(false).Coordinates) - pd.Projectile.Particle.Position,
+                GetCellPosition(GetMouseCell(false).Coordinates) - _dummy.transform.position,
                 PhysHexParams.UseCustomProjectile
                     ? PhysHexParams.CustomProjectile.Particle.Clone()
                     : PhysHexParams.ProjectileRepository[PhysHexParams.ProjectileType].Particle.Clone());
+            pd.Projectile.Particle.Position = _dummy.transform.position;
 
             // Remove gravity from all for now
             pd.Projectile.Particle.Acceleration = new PhysHex.AccruedVector3();
@@ -728,13 +723,14 @@ public class HexGrid : MonoBehaviour
             }
 
             pd.Dummy.SetActive(true);
-            pd.Dummy.transform.position = pd.Projectile.Particle.Position;
+            pd.Dummy.transform.position = _dummy.transform.position;
         }
         else if (shooting && PhysHexParams.UseFireworks && PhysHexParams.Firework == null)
         {
             PhysHexParams.Firework = new PhysHex.Firework(PhysHexParams.FireworkPayloads, new PhysHex.Particle {
                 Position = _dummy.transform.position,
                 Mass = 1f,
+                Velocity = (GetCellPosition(GetMouseCell(false).Coordinates) - _dummy.transform.position).normalized,
             });
         }
     }

@@ -27,6 +27,7 @@ public class FireworkPayload
     public float Damping;
     public int FuseCount;
     public bool AggregateParentVelocity;
+    public bool UseParentDirection;
 
     public float RandomExpiry { get => Random.Range(MinExpiry, MaxExpiry); }
     public Vector3 RandomVelocity { get => new Vector3(Random.Range(MinVelocity.x, MaxVelocity.x), Random.Range(MinVelocity.y, MaxVelocity.y), Random.Range(MinVelocity.z, MaxVelocity.z)); }
@@ -39,6 +40,7 @@ public class FireworkPayload
             var particle = parent.Clone();
             particle.Velocity = RandomVelocity;
             particle.Velocity += AggregateParentVelocity ? parent.Velocity : Vector3.zero;
+            particle.Velocity *= UseParentDirection ? parent.Velocity.magnitude : 1;
             particle.Damping = Damping;
             var spark = new FireworkSpark {
                 Projectile = new Projectile(RandomExpiry, particle.Velocity.normalized, particle),
@@ -54,7 +56,7 @@ public class FireworkPayload
 [System.Serializable]
 public class Firework
 {
-    public List<FireworkSpark> Sparks;
+    public List<FireworkSpark> Sparks = new List<FireworkSpark>();
     public readonly List<FireworkPayload> Payloads;
 
     public Firework(List<FireworkPayload> payloads, Particle particle)
@@ -83,6 +85,7 @@ public class Firework
 
     public bool Integrate(float duration)
     {
+        if (Sparks == null) return false;
         var expiredIndexes = new List<int>();
         int index = -1;
         foreach (var s in Sparks)
