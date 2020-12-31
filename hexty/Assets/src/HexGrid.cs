@@ -574,13 +574,13 @@ public class HexGrid : MonoBehaviour
 
     private void ProcessPhysHexCommand()
     {
-        // Left mouse click.
+        // Middle mouse click.
         // Shoot a projectile from the source coordinates of the
         // dummy to the destination coordinates.
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButtonDown(2))
         {
             var source = HexParams.CurrentCoordinates.ToPosition(_metrics, Orientation, OffsetType);
-            var target = GetMouseCell(HexParams.WrapAroundHexGeometry).Coordinates.ToPosition(_metrics, Orientation, OffsetType);
+            var target = GetMouseCell().Coordinates.ToPosition(_metrics, Orientation, OffsetType);
 
             ProjectileDummy pd = null;
 
@@ -913,7 +913,7 @@ public class HexGrid : MonoBehaviour
                 break;
 
             case HexGridMode.Visible:
-                var visibleMouseCell = GetMouseCell(HexParams.WrapAroundHexGeometry);
+                var visibleMouseCell = GetMouseCell();
                 HexParams.IsMouseVisible = HexParams.CurrentCoordinates.Visible(
                     visibleMouseCell.Coordinates,
                     _metrics,
@@ -939,7 +939,7 @@ public class HexGrid : MonoBehaviour
                 break;
 
             case HexGridMode.FindPath:
-                var pathMouseCell = GetMouseCell(HexParams.WrapAroundHexGeometry);
+                var pathMouseCell = GetMouseCell();
                 foreach (var coords in HexParams.CurrentCoordinates.FindPath(
                     pathMouseCell.Coordinates,
                     WalkableCoordinates))

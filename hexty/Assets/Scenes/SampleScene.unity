@@ -553,10 +553,10 @@ MonoBehaviour:
   CellLabelPrefab: {fileID: 5183563927340717737, guid: cffe565179c93814ab6774fc5d431c91,
     type: 3}
   HexParams:
-    Width: 6
-    Height: 6
-    PaddingWidth: 1
-    PaddingHeight: 1
+    Width: 8
+    Height: 8
+    PaddingWidth: 4
+    PaddingHeight: 4
     OuterRadius: 10
     DefaultColor: {r: 1, g: 1, b: 1, a: 1}
     PaddingColor: {r: 1, g: 1, b: 1, a: 1}
