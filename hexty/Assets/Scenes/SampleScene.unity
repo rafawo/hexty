@@ -609,9 +609,25 @@ MonoBehaviour:
     ClampValue: 500
     UseCustomProjectile: 0
     ProjectileType: PISTOL
-    ProjectileExpirySeconds: 4
+    ProjectileExpirySeconds: 2
+    CustomProjectile:
+      Particle:
+        Position: {x: 0, y: 0, z: 0}
+        Velocity: {x: 0, y: 0, z: 0}
+        Acceleration:
+          m_Total: {x: 0, y: 0, z: 0}
+          m_Multiplier: 1
+        Damping: 1
+        InverseMass: 0.1
+        Force:
+          m_Total: {x: 0, y: 0, z: 0}
+          m_Multiplier: 1
+        Pause: 0
+      Perishable:
+        Epoch: 0
+        Expiry: -1
     Projectiles: []
-    MaxProjectiles: 10
+    MaxProjectiles: 3
 --- !u!4 &952995617
 Transform:
   m_ObjectHideFlags: 0

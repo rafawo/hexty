@@ -17,6 +17,7 @@ namespace PhysHex
 /// used to implement a perishable object that expires
 /// after the accumulated duration has reached the expiry.
 /// </summary>
+[System.Serializable]
 public class Perishable
 {
     /// <summary>
@@ -65,6 +66,18 @@ public class Perishable
         Epoch += duration;
         return !Expired;
     }
+
+    /// <summary>
+    /// Returns a nearly identical clone of this object instance.
+    /// </summary>
+    /// <returns></returns>
+    public Perishable Clone()
+        => new Perishable {
+            Epoch = Epoch,
+            Expiry = Expiry,
+            StopPredicate = StopPredicate,
+            Context = Context,
+        };
 }
 
 /// <summary>
@@ -77,6 +90,16 @@ public class PerishableVector3
 {
     public Vector3 V = Vector3.zero;
     public Perishable Perishable;
+
+    /// <summary>
+    /// Returns a nearly identical clone of this object instance.
+    /// </summary>
+    /// <returns></returns>
+    public PerishableVector3 Clone()
+        => new PerishableVector3 {
+            V = new Vector3(V.x, V.y, V.z),
+            Perishable = Perishable.Clone(),
+        };
 }
 
 /// <summary>
@@ -215,6 +238,24 @@ public class AccruedVector3
     /// <param name="duration">Supplies the duration of time units that have occured since the last Integrate function call.</param>
     public void Integrate(float duration) =>
         m_Modifiers.Where(entry => !entry.Value.Perishable.Integrate(duration)).ToList().ForEach(entry => Remove(entry.Key));
+
+    /// <summary>
+    /// Returns a nearly identical clone of this object instance.
+    /// </summary>
+    /// <returns></returns>
+    public AccruedVector3 Clone()
+    {
+        var r = new AccruedVector3 {
+            m_Total = new Vector3(Total.x, Total.y, Total.z),
+            Multiplier = Multiplier,
+            m_Modifiers = new Dictionary<string, PerishableVector3>(),
+        };
+        foreach (var entry in m_Modifiers)
+        {
+            r.m_Modifiers.Add(entry.Key, entry.Value.Clone());
+        }
+        return r;
+    }
 }
 
 /// <summary>
@@ -324,6 +365,21 @@ public class Particle
 
         return true;
     }
+
+    /// <summary>
+    /// Returns a nearly identical clone of this object instance.
+    /// </summary>
+    /// <returns></returns>
+    public Particle Clone()
+        => new Particle {
+            Position = Position,
+            Velocity = Velocity,
+            Acceleration = Acceleration.Clone(),
+            Damping = Damping,
+            InverseMass = InverseMass,
+            Force = Force.Clone(),
+            Pause = Pause,
+        };
 }
 
 }

@@ -103,15 +103,17 @@ public class PhysHexUx
     public bool UseCustomProjectile = false;
     public string ProjectileType = PhysHex.ProjectileCommonTypeName.Pistol;
     public PhysHex.ProjectileRepository ProjectileRepository = new PhysHex.ProjectileRepository();
-    public float ProjectileExpirySeconds = 4;
+    public float ProjectileExpirySeconds = 2;
     public PhysHex.Projectile CustomProjectile = PhysHex.Projectile.Nil;
 
     public List<ProjectileDummy> Projectiles = new List<ProjectileDummy>();
-    public int MaxProjectiles = 10;
+    public int MaxProjectiles = 2;
 }
 
 public class HexGrid : MonoBehaviour
 {
+    #region Members
+
     public HexCell CellPrefab;
     public Text CellLabelPrefab;
 
@@ -150,6 +152,8 @@ public class HexGrid : MonoBehaviour
 
     private List<Text> _gridCanvasText = new List<Text>();
 
+    #endregion
+
     private void Awake()
     {
         Initialize();
@@ -184,7 +188,6 @@ public class HexGrid : MonoBehaviour
                 Destroy(p.Dummy);
             }
             PhysHexParams.Projectiles.Clear();
-
         }
         else
         {
@@ -446,18 +449,6 @@ public class HexGrid : MonoBehaviour
 
             PhysHexParams.Particle.Position = hexWrapAround.TransformPosition(PhysHexParams.Particle.Position, _metrics);
             _dummy.transform.position = PhysHexParams.Particle.Position;
-
-            foreach (var p in PhysHexParams.Projectiles)
-            {
-                if (p.Projectile.Integrate(Time.deltaTime))
-                {
-                    p.Dummy.transform.position = p.Projectile.Particle.Position;
-                }
-                else
-                {
-                    p.Dummy.SetActive(false);
-                }
-            }
         }
         else
         {
@@ -575,56 +566,65 @@ public class HexGrid : MonoBehaviour
 
     private void ProcessPhysHexCommand()
     {
+        foreach (var p in PhysHexParams.Projectiles)
+        {
+            if (p.Projectile.Integrate(Time.deltaTime))
+            {
+                p.Dummy.transform.position = p.Projectile.Particle.Position;
+            }
+            else
+            {
+                p.Dummy.SetActive(false);
+            }
+        }
+
         // Middle mouse click.
         // Shoot a projectile from the source coordinates of the
         // dummy to the destination coordinates.
-        if (Input.GetMouseButtonDown(2))
+        if (Input.GetMouseButtonUp(2))
         {
             var source = HexParams.CurrentCoordinates.ToPosition(_metrics, Orientation, OffsetType);
             var target = GetMouseCell().Coordinates.ToPosition(_metrics, Orientation, OffsetType);
 
-            ProjectileDummy pd = null;
+            int index = -1;
 
             if (PhysHexParams.Projectiles.Count == PhysHexParams.MaxProjectiles)
             {
                 foreach (var p in PhysHexParams.Projectiles)
                 {
+                    ++index;
                     if (p.Projectile.Perishable.Expired)
                     {
-                        pd = p;
                         break;
                     }
                 }
             }
             else
             {
-                if (PhysHexParams.UseCustomProjectile)
-                {
-                    pd = new ProjectileDummy { Projectile = PhysHexParams.CustomProjectile };
-                }
-                else
-                {
-                    pd = new ProjectileDummy { Projectile = PhysHexParams.ProjectileRepository[PhysHexParams.ProjectileType] };
-                }
-
-                PhysHexParams.Projectiles.Add(pd);
+                PhysHexParams.Projectiles.Add(new ProjectileDummy { Projectile = PhysHex.Projectile.Nil });
+                index = PhysHexParams.Projectiles.Count - 1;
             }
 
-            if (pd == null)
+            if (index < 0 || index >= PhysHexParams.Projectiles.Count)
             {
                 // There was no space for a new projectile
                 return;
             }
-            else
-            {
-                pd.Projectile.Particle.Position = source;
-                var direction = target - source;
-                direction.Normalize();
-                pd.Projectile.Particle.Velocity = Vector3.Scale(pd.Projectile.Particle.Velocity, direction);
 
-                // Remove gravity from all for now
-                pd.Projectile.Particle.Acceleration = new PhysHex.AccruedVector3();
-            }
+            var pd = PhysHexParams.Projectiles[index];
+            pd.Projectile.Reset(
+                PhysHexParams.ProjectileExpirySeconds,
+                PhysHexParams.UseCustomProjectile
+                    ? PhysHexParams.CustomProjectile.Particle.Clone()
+                    : PhysHexParams.ProjectileRepository[PhysHexParams.ProjectileType].Particle.Clone());
+
+            pd.Projectile.Particle.Position = source;
+            var direction = target - source;
+            direction.Normalize();
+            pd.Projectile.Particle.Velocity = Vector3.Scale(pd.Projectile.Particle.Velocity, direction);
+
+            // Remove gravity from all for now
+            pd.Projectile.Particle.Acceleration = new PhysHex.AccruedVector3();
 
             if (pd.Dummy == null)
             {

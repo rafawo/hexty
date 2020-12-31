@@ -22,7 +22,7 @@ public class Projectile
     /// <summary>
     /// Physhex unit of simulation.
     /// </summary>
-    public Particle Particle { get; private set;}
+    public Particle Particle;
 
     /// <summary>
     /// Perishable traits of the projectile.
@@ -30,7 +30,8 @@ public class Projectile
     /// the Context property of the perishable member is
     /// set to the same particle object.
     /// </summary>
-    public Perishable Perishable { get; private set; }
+    public Perishable Perishable;
+
 
     /// <summary>
     /// Constructor that configures a projectile with an expiry threshold
@@ -68,9 +69,9 @@ public class Projectile
     /// this doesn't integrate the particle.
     /// </summary>
     /// <param name="duration">Supplies the duration of time units that have occured since the last time.</param>
-    /// <returns>True if the perishable hasn't expired after the increase in duration.</returns>
+    /// <returns>True if the projectile hasn't expired after the increase in duration.</returns>
     public bool Integrate(float duration)
-        => Perishable.Integrate(duration) ? Particle.Integrate(duration) : false;
+        => Perishable.Integrate(duration) && Particle.Integrate(duration);
 
     /// <summary>
     /// Represents a "null" projectile with an object that is still
@@ -78,7 +79,19 @@ public class Projectile
     /// However, the physhex simulation wouldn't do anything with
     /// this projectile.
     /// </summary>
-    public static Projectile Nil = new Projectile(-1f, new Particle());
+    public static Projectile Nil { get => new Projectile(-1f, new Particle()); }
+
+    private Projectile() { }
+
+    /// <summary>
+    /// Returns a nearly identical clone of this object instance.
+    /// </summary>
+    /// <returns></returns>
+    public Projectile Clone()
+        => new Projectile {
+            Particle = Particle.Clone(),
+            Perishable = Perishable.Clone(),
+        };
 }
 
 public static class ProjectileCommonTypeName
@@ -111,7 +124,7 @@ public class ProjectileRepository
         {
             lock (gm_Lock)
             {
-                return gm_Projectiles.ContainsKey(name) ? gm_Projectiles[name] : Projectile.Nil;
+                return gm_Projectiles.ContainsKey(name) ? gm_Projectiles[name].Clone() : Projectile.Nil;
             }
         }
 
